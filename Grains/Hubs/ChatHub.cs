@@ -18,6 +18,9 @@ public class ChatHub : Hub, IChatHub
     public async Task SendMessage(string message)
     {
         if(Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var Value))
+        {
+
+        }
             //clusterClient.GetGrain<IChannelGrain>("test").Message()
     }
     public override Task OnConnectedAsync()
