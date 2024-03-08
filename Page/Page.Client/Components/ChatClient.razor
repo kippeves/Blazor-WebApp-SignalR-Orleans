@@ -1,0 +1,75 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.SignalR.Client
+@using Page.Shared.Interfaces
+@using Page.Shared.Models
+@using Page.Shared.Services
+@implements IAsyncDisposable
+
+@inject PersistentComponentState ApplicationState
+@inject NavigationManager Navigator
+@inject AuthenticationStateProvider Authentication
+@inject IChatService Chat
+
+<EditForm Model="@model" OnSubmit="Send">
+    <InputText id="message" @bind-Value="infoValue" />
+    <button disabled="@(string.IsNullOrEmpty(infoValue))" type="submit">Skicka</button>
+</EditForm>
+<hr>
+
+@if (Messages is not null)
+{
+    <ul id="messagesList">
+        @foreach (var message in Messages)
+        {
+            <li>@message</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public string[]? Messages { get; set; } = [];
+    [Parameter] public EventCallback<string[]> MessagesChanged { get; set; }
+    int renders { get; set; } = 1;
+    HubConnection hubConnection;
+    string? infoValue { get; set; }
+    MessageModel model = new();
+    private IDisposable? persistingSubscription;
+    private string _renderMode = "Static server-side rendering";
+    private const string infoKey = "Info";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Messages = await Chat.GetValueAsync();
+        InvokeAsync(StateHasChanged);
+    }
+
+    async Task Send()
+    {
+
+        //hubConnection.SendAsync("SendMessage", model.Message);
+        model.Message = string.Empty;
+    }
+
+    private Task PersistData()
+    {
+        ApplicationState.PersistAsJson(infoKey, infoValue);
+
+        return Task.CompletedTask;
+    }
+
+
+    public bool IsConnected()
+    {
+        if (hubConnection == null)
+        {
+            return false;
+        }
+
+        return hubConnection.State == HubConnectionState.Connected;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        persistingSubscription?.Dispose();
+    }
+}

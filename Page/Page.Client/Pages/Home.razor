@@ -1,0 +1,32 @@
+﻿@page "/"
+@using Page.Shared.Services
+@inject InfoService Service
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+<InputText @bind-Value="@Value" />
+<button disabled="@(Value == compareValue)" type="button" onclick="@Update()">Uppdatera</button>
+
+<h2>Value is : @compareValue</h2>
+
+@code {
+    public string? Value { get; set; }
+    public string? compareValue { get; set; }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            compareValue = await Service.GetInfo();
+        base.OnAfterRender(firstRender);
+    }
+    public async Task Update()
+    {
+        if (!string.IsNullOrEmpty(Value))
+        {
+            await Service.SetInfo(Value);
+            compareValue = Value;
+            StateHasChanged();
+        }
+    }
+}
