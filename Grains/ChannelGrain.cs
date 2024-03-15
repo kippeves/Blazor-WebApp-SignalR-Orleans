@@ -1,28 +1,27 @@
+using Grains.Hubs;
 using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
-using Grains.Interfaces.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Orleans.Concurrency;
 using Orleans.Runtime;
-using Page.Hubs;
+using SignalR.Orleans.Core;
 
 namespace Grains;
 [Reentrant]
 public class ChannelGrain : Grain, IChannelGrain
 {
-    private readonly SignalR.Orleans.Core.HubContext<ChatHub> _hubContext;
+    private readonly HubContext<ChatHub> _hubContext;
     private readonly IPersistentState<ChannelDetails> _state;
 
     public ChannelGrain(
         [PersistentState(
         stateName: "Channel")]
-        IPersistentState<ChannelDetails> state,
-        SignalR.Orleans.Core.HubContext<ChatHub> hubContext
+        IPersistentState<ChannelDetails> state
         )
     {
-        
         _state = state;
-        _hubContext = hubContext;
+        _hubContext = GrainFactory.GetHub<ChatHub>();
     }
 
     public override Task OnActivateAsync(CancellationToken cancellationToken)
@@ -34,7 +33,6 @@ public class ChannelGrain : Grain, IChannelGrain
     public async Task Join(Guid id)
     {
         _state.State._onlineMembers.Add(id);
-
         await _state.WriteStateAsync();
     }
 

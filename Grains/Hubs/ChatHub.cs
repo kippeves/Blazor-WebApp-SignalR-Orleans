@@ -1,15 +1,14 @@
-﻿using Page.Shared.Models;
+﻿using Shared.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Grains.Interfaces;
 
-namespace Page.Hubs;
+namespace Grains.Hubs;
 [Authorize]
-public class ChatHub : Hub, IChatHub
+public class ChatHub : Hub
 {
     private readonly IClusterClient clusterClient;
-
     public ChatHub(IClusterClient clusterClient)
     {
         this.clusterClient = clusterClient;
@@ -17,15 +16,16 @@ public class ChatHub : Hub, IChatHub
 
     public async Task SendMessage(string message)
     {
-        if(Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var Value))
+        if (Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var Value))
         {
 
         }
-            //clusterClient.GetGrain<IChannelGrain>("test").Message()
     }
+
     public override Task OnConnectedAsync()
     {
-        var x = Context.User;
+        var UserName = Context?.User?.FindFirstValue(ClaimTypes.Name);
+        Console.WriteLine($"{UserName} has joined");
         return Task.CompletedTask;
     }
 
@@ -38,10 +38,4 @@ public class ChatHub : Hub, IChatHub
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
     }
-}
-
-public interface IChatHub
-{
-    public Task AddToGroup(string groupName);
-    public Task RemoveFromGroup(string groupName);
 }

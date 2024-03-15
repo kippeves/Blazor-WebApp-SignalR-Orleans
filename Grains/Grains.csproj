@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Grains.Interfaces\Grains.Interfaces.csproj" />
-    <ProjectReference Include="..\Page.Shared\Page.Shared.csproj" />
+    <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
 
 </Project>
