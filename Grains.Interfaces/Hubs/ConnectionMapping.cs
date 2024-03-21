@@ -4,7 +4,9 @@ namespace Grains.Interfaces.Hubs
 {
     public class ConnectionMapping<T>
     {
+#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
         private readonly Dictionary<T, HashSet<string>> _connections = [];
+#pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
 
         public int Count
         {
@@ -18,7 +20,7 @@ namespace Grains.Interfaces.Hubs
         {
             lock (_connections)
             {
-                HashSet<string> connections;
+                HashSet<string>? connections;
                 if (!_connections.TryGetValue(key, out connections))
                 {
                     connections = new HashSet<string>();
@@ -34,7 +36,7 @@ namespace Grains.Interfaces.Hubs
 
         public IEnumerable<string> GetConnections(T key)
         {
-            HashSet<string> connections;
+            HashSet<string>? connections;
             if (_connections.TryGetValue(key, out connections))
             {
                 return connections;
@@ -47,7 +49,7 @@ namespace Grains.Interfaces.Hubs
         {
             lock (_connections)
             {
-                HashSet<string> connections;
+                HashSet<string>? connections;
                 if (!_connections.TryGetValue(key, out connections))
                 {
                     return;

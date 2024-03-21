@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Backend.Controllers
 {
-    [Route("api/[controller]/[action]")]
+    [Route("backend/[controller]/[action]")]
     [Authorize]
     [ApiController]
     public class MessageController : ControllerBase

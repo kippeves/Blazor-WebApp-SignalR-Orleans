@@ -7,7 +7,7 @@ namespace Backend.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("backend/[controller]")]
 public class UIController : ControllerBase
 {
     private readonly IClusterClient clusterClient;

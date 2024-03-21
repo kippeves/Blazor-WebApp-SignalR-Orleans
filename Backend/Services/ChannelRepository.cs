@@ -1,19 +1,17 @@
-﻿using System.Runtime.CompilerServices;
-using Backend.Data;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+﻿using Backend.Data;
+using Grains.Interfaces;
 
 namespace Backend.Services
 {
     public class ChannelRepository : IChannelRepository
     {
         private readonly ApplicationDbContext context;
+        private readonly IClusterClient clusterClient;
 
-        public ChannelRepository(ApplicationDbContext context)
+        public ChannelRepository(ApplicationDbContext context, IClusterClient clusterClient)
         {
             this.context = context;
+            this.clusterClient = clusterClient;
         }
 
         public async Task<bool> AddChannelAsync(string name, string? category) => await AddChannelAsync(name, category, null);
@@ -51,5 +49,19 @@ namespace Backend.Services
         }
 
         public IEnumerable<ChannelDTO> GetChannels() => context.Channels.Select(c => new ChannelDTO(c.Id, c.Name));
+
+        public async Task<bool> SetNameForChannel(Guid id, string newName)
+        {
+            try
+            {
+                var channel = clusterClient.GetGrain<IChannelGrain>(id);
+                await channel.SetName(newName);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

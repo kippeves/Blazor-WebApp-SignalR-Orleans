@@ -1,3 +1,4 @@
+using System.Threading.Tasks.Dataflow;
 using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
 using Orleans.Runtime;
@@ -17,9 +18,17 @@ public sealed class ChatMemberGrain : Grain, IChatMemberGrain
         _settings = settings;
     }
 
+    public override Task OnActivateAsync(CancellationToken cancellationToken)
+    {
+        if (_settings.State.activeChannel.HasValue)
+            ActiveChannel = GrainFactory.GetGrain<IChannelGrain>(_settings.State.activeChannel.Value).AsReference<IChannelGrain>();
+
+        return base.OnActivateAsync(cancellationToken);
+    }
+
     public async Task SetMenu(bool state)
     {
-        _settings.State.MenuIsOpen = state;
+        _settings.State.menuIsOpen = state;
         await _settings.WriteStateAsync();
     }
 
@@ -28,30 +37,47 @@ public sealed class ChatMemberGrain : Grain, IChatMemberGrain
     public async Task SetName(string Name)
     {
 
-        _state.State = _state.State with { ChatName = Name };
+        _state.State = _state.State with { chatName = Name };
         await _state.WriteStateAsync();
     }
 
-    public Task<string> GetName() =>
-        Task.FromResult(_state.State.ChatName);
+    public Task<string> GetName() => Task.FromResult(_state.State.chatName);
 
-    public Task<MemberDetails> GetDetails() => Task.FromResult(_state.State);
+    public Task<MemberDetails> GetDetails() => Task.FromResult(_state.State with { id = this.GetPrimaryKey() });
 
-    public async Task ChangeChannel(Guid channelId)
+    public async Task SetActiveChannel(Guid? channelId)
     {
-        if (channelId == _settings.State.ActiveChannel) return;
-
-        if (_settings.State.ActiveChannel != null)
-        {
-            if ((IChannelGrain?)GrainFactory.GetGrain<IChannelGrain>(_settings.State.ActiveChannel.Value) != null)
-                await GrainFactory.GetGrain<IChannelGrain>(_settings.State.ActiveChannel.Value).Leave(this.GetPrimaryKey());
-        }
-
-
-        _settings.State.ActiveChannel = channelId;
+        _settings.State.activeChannel = channelId;
         await _settings.WriteStateAsync();
-        await GrainFactory.GetGrain<IChannelGrain>(_settings.State.ActiveChannel.Value).Join(_settings.State.ActiveChannel.Value);
+
+        ActiveChannel = channelId.HasValue ? GrainFactory.GetGrain<IChannelGrain>(channelId.Value) : null;
     }
 
-    public Task<Guid?> GetActiveChannel() => Task.FromResult(_settings.State.ActiveChannel);
+    public async ValueTask Switch(Guid newId)
+    {
+        if (ActiveChannel != null)
+            await Leave(ActiveChannel.GetPrimaryKey());
+
+        await Join(newId);
+    }
+
+    public async ValueTask Join(Guid id)
+    {
+        using var scope = RequestContext.AllowCallChainReentrancy();
+        var roomGrain = GrainFactory.GetGrain<IChannelGrain>(id);
+        await roomGrain.Join(this.AsReference<IChatMemberGrain>());
+        await SetActiveChannel(id);
+    }
+    public async ValueTask Leave(Guid id)
+    {
+        using var scope = RequestContext.AllowCallChainReentrancy();
+        var roomGrain = GrainFactory.GetGrain<IChannelGrain>(id);
+        await roomGrain.Leave(this.AsReference<IChatMemberGrain>());
+        await SetActiveChannel(null);
+    }
+
+
+    public Task<Guid?> GetActiveChannel() => Task.FromResult(_settings.State.activeChannel);
+    public Task<IChannelGrain?> GetActiveChannelGrain() => Task.FromResult(ActiveChannel);
+
 }

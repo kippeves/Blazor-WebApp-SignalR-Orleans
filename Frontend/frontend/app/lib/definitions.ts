@@ -21,16 +21,33 @@ export type PrefetchData = {
 }
 
 export type AppSettings = {
-  MenuIsOpen: boolean
-  ActiveChannel: UUID
+  menuIsOpen: boolean
+  activeChannel: UUID
+}
+export type JoinChannelEvent = {
+  channelId: UUID,
+  channelName: string
 }
 
+export enum ChannelState {
+  Joined,
+  Switching,
+  NotConnected,
+}
+
+
 export type ChatMessage = {
-  Id: UUID,
-  Time: string,
-  User: string,
+  id: UUID,
+  created: string,
+  user: string,
   //    User: SessionUser,
-  Message: string
+  message: string
+}
+
+export type ChatMember = {
+  id: UUID,
+  chatName: string,
+  pictureURL: string
 }
 
 export type SessionUser = {

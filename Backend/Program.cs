@@ -6,11 +6,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Backend.Services;
+using Microsoft.Azure.Cosmos;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source = AppDb.db"));
-
 
 builder.Services.AddAuthentication(options =>
     {
@@ -19,18 +20,25 @@ builder.Services.AddAuthentication(options =>
         options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
     }).AddJwtBearer(o =>
     {
+        o.Audience = builder.Configuration["Jwt:Audience"];
         o.TokenValidationParameters = new TokenValidationParameters
         {
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            ValidateLifetime = false,
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = false,
             ValidateIssuerSigningKey = true
+
         };
         o.Events = new JwtBearerEvents
         {
+            OnChallenge = context =>
+            {
+                Console.WriteLine("Failure: " + context.AuthenticateFailure);
+                Console.WriteLine("error: " + context.ErrorDescription);
+                return Task.CompletedTask;
+            },
             OnMessageReceived = context =>
             {
                 var accessToken = context.Request.Query["access_token"];
@@ -49,11 +57,28 @@ builder.Services.AddAuthentication(options =>
     });
 builder.Services.AddAuthorization();
 
+const string cosmosConnection = "AccountEndpoint=https://10.211.55.5:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
 builder.Host.UseOrleans(static siloBuilder =>
 {
     siloBuilder.UseLocalhostClustering();
-    siloBuilder.AddMemoryGrainStorageAsDefault();
-    siloBuilder.AddMemoryGrainStorage("PubSub");
+    //    siloBuilder.AddMemoryGrainStorageAsDefault().AddMemoryGrainStorage("PubSub");
+    siloBuilder.AddCosmosGrainStorageAsDefault(
+    configureOptions: static options =>
+    {
+        options.IsResourceCreationEnabled = true;
+        options.ContainerThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
+        options.ConfigureCosmosClient(cosmosConnection);
+    });
+    siloBuilder.AddCosmosGrainStorage(
+        name: "PubSub",
+        configureOptions: static options =>
+        {
+            options.IsResourceCreationEnabled = true;
+            options.ContainerThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
+            options.ConfigureCosmosClient(cosmosConnection);
+        });
+
     siloBuilder.UseSignalR(); // Adds ability #1 and #2 to Orleans.
     siloBuilder.RegisterHub<ChatHub>(); // Required for each hub type if the backplane ability #1 is being used.
 
@@ -61,6 +86,7 @@ builder.Host.UseOrleans(static siloBuilder =>
 
 builder.Services.AddSignalR().AddOrleans(); // Tells the SignalR hubs in the web application to use Orleans as a backplane (ability #1)
 builder.Services.AddScoped<IChannelRepository, ChannelRepository>();
+builder.Services.AddScoped<DataInitializer>();
 
 builder.Services.AddResponseCompression(opts =>
 {
@@ -70,9 +96,13 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.AddControllers();
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.GetService<DataInitializer>()!.SeedRoles();
+}
 app.UseCors(builder =>
         builder
-        .WithOrigins("http://localhost:3000")
+        .WithOrigins("http://192.168.2.124:3000")
         .AllowCredentials()
         .AllowAnyMethod()
         .AllowAnyHeader());

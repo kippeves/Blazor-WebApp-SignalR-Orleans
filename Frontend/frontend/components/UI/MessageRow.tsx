@@ -4,12 +4,14 @@ import { Chip, Grid } from "@mui/material";
 import { grey } from "@mui/material/colors";
 
 export default function MessageRow({ Data, Even }: { Data: ChatMessage, Even: boolean }) {
-    const msgDate = new Date(Date.parse(Data.Time));
+    var date = Date.parse(Data.created)
+    const msgDate = new Date(date);
+
     const shortDate = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'short' }).format(msgDate);
     const shortTime = new Intl.DateTimeFormat('sv-SE', { timeStyle: 'short' }).format(msgDate);
     const TimeString = shortDate + " " + shortTime;
-
-    return (<Grid container display={"flex"} sx={{
+    return (
+    <Grid container display={"flex"} sx={{
         bgcolor: Even ? grey[100] : "",
         borderRadius: 1
     }} p={1} alignItems={'center'} >
@@ -21,6 +23,7 @@ export default function MessageRow({ Data, Even }: { Data: ChatMessage, Even: bo
             xs={true}
             px={1}
             py={1}
-        >{Data.User}: {Data.Message}</Grid>
+
+        >{Data.user}: {Data.message}</Grid>
     </Grid >)
 }

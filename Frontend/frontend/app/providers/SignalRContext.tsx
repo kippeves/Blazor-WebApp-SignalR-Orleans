@@ -1,0 +1,34 @@
+'use client'
+import React, { useMemo } from "react";
+import { createSignalRContext } from "react-signalr";
+import { Context, Hub } from "react-signalr/src/signalr/types";
+
+export type SignalRContextType = {
+    Hub: Context<Hub<string, string>>,
+};
+
+const SignalRContext = React.createContext<SignalRContextType | null>(null);
+
+let SignalRClient: Context<Hub<string, string>> | undefined = undefined;
+
+
+const SignalRContextProvider: React.FC<{ children: React.ReactNode, Token: string }> = ({ children, Token }: { children: React.ReactNode, Token: string }) => {
+    const SignalR = useMemo(() => {
+        return createSignalRContext()
+    }, [Token]);
+
+    return (
+        <SignalR.Provider
+            connectEnabled={!!Token}
+            accessTokenFactory={() => Token}
+            dependencies={[Token]} //remove previous connection and create a new connection if changed
+            url={`http://192.168.2.124:5144/hubs/chathub`}>
+            <SignalRContext.Provider value={{ Hub: SignalR }}>
+                {children}
+            </SignalRContext.Provider>
+        </SignalR.Provider>
+    );
+
+}
+export { SignalRContext, SignalRContextProvider }
+

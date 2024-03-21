@@ -1,22 +1,22 @@
-'use server'
-import { auth } from "@/auth";
-import ChatApp from "@/components/Chat";
-import { AppSettings, ChatChannel, PrefetchData } from "../lib/definitions";
-import React, { useRef } from "react";
-
-const API = async (token: string, url: string) => await fetch(url, {
-    headers: { Authorization: "Bearer " + token }
-}).then(res => res.json());
+import React from "react";
+import { AppBar, Avatar, Box, Container, Drawer, IconButton, Toolbar, Tooltip } from "@mui/material";
+import ResponsiveAppBar from "@/components/UI/Navbar";
+import Channels from "@/components/UI/Sidebars/Channels";
+import { DoorBack } from "@mui/icons-material";
+import ChatClient from "@/components/ChatClient";
+import Members from "@/components/UI/Sidebars/Members";
+import { signOut } from "@/auth";
 
 export default async function Page() {
-    const authState = await auth();
-    const user = authState?.user;
-    const prefetch = async () => await API(user?.token, 'http://localhost:5144/api/User/Prefetch') as AppSettings;
-    const listChannels = async () => await API(user?.token, 'http://localhost:5144/api/Channel/GetChannels') as ChatChannel[];
-    const settings = await prefetch();
-    const channels = await listChannels();
-    const prefetchData = { User: user!, Messages: [], Settings: settings, Channels: channels } as PrefetchData;
     return (
-        prefetchData && <ChatApp Data={prefetchData} />
+        <>
+
+            <Channels />
+            <Container component={"main"} sx={{ display: 'flex', flexDirection: 'column', height: '100dvh' }} >
+                <ChatClient />
+            </Container>
+            <Members />
+
+        </>
     );
 }

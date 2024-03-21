@@ -1,18 +1,25 @@
 import type { NextAuthConfig } from 'next-auth';
 
+const baseURL = process.env.API_URL;
+
 export const authConfig = {
     pages: {
         signIn: '/login',
     },
     callbacks: {
-        authorized({ auth, request: { nextUrl } }) {
+        authorized({ auth, request: { nextUrl, destination, url } }) {
             const isLoggedIn = !!auth?.user;
+            if (nextUrl.pathname.startsWith('/undefined')) return true;
             const isInChat = nextUrl.pathname.startsWith('/chat');
             if (isInChat) {
                 if (isLoggedIn) return true;
                 return false; // Redirect unauthenticated users to login page
+            } else {
+                if (isLoggedIn) {
+                    return Response.redirect(new URL('/chat', nextUrl));
+                }
+                else return true;
             }
-            return true;
         },
         async jwt({ token, user }) {
             if (token && user) {
@@ -31,7 +38,7 @@ export const authConfig = {
     providers: [], // Add providers with an empty array for now
 } satisfies NextAuthConfig;
 
-const fetchToken = async (id: string) => await fetch("http://localhost:5144/api/User/Token", {
+const fetchToken = async (id: string) => await fetch(`${baseURL}/User/Token`, {
     "body": JSON.stringify({ id: id }),
     "method": "POST",
     headers: {

@@ -3,8 +3,10 @@ using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Orleans;
 using Orleans.Concurrency;
 using Orleans.Runtime;
+using OrleansCodeGen.Orleans;
 using SignalR.Orleans.Core;
 
 namespace Grains;
@@ -24,41 +26,44 @@ public class ChannelGrain : Grain, IChannelGrain
         _hubContext = GrainFactory.GetHub<ChatHub>();
     }
 
-    public override Task OnActivateAsync(CancellationToken cancellationToken)
-    {
+    public HashSet<IChatMemberGrain> Members { get; set; } = [];
 
-        return base.OnActivateAsync(cancellationToken);
-    }
+    public Task<string> GetName() => Task.FromResult(_state.State.Name);
 
-    public async Task Join(Guid id)
+
+    public async Task SetName(string name)
     {
-        _state.State._onlineMembers.Add(id);
+        _state.State.Name = name;
         await _state.WriteStateAsync();
     }
+    public Task<bool> MemberIsInChannel(IChatMemberGrain member) => Task.FromResult(Members.Contains(member));
 
-    public async Task Leave(Guid id)
+    public Task Join(IChatMemberGrain member)
     {
-        _state.State._onlineMembers.Remove(id);
-        await _state.WriteStateAsync();
+        Members.Add(member);
+        return Task.CompletedTask;
+    }
+
+    public Task Leave(IChatMemberGrain member)
+    {
+        Members.Remove(member);
+        return Task.CompletedTask;
     }
 
     public async Task Message(ChatMsg msg)
     {
+        Console.WriteLine("sendering message now");
         _state.State._messages.Add(msg);
         await _state.WriteStateAsync();
-        var payload = new InvocationMessage("SendMessage", [msg]);
-        await _hubContext.Group(this.GetPrimaryKeyString()).Send(payload);
+        var payload = new InvocationMessage("ReceiveMessage", [msg]);
+        Console.WriteLine(msg.ToString());
+        var keyStr = this.GetPrimaryKeyString();
+        await _hubContext.Group(keyStr).Send(payload);
     }
 
-    public Task<MemberDetails[]> GetMembers()
+    public async ValueTask<MemberDetails[]> GetMembers()
     {
-        List<MemberDetails> _temp = [];
-        Parallel.ForEach(_state.State._onlineMembers, async mem =>
-        {
-            var member = GrainFactory.GetGrain<IChatMemberGrain>(mem);
-            _temp.Add(await member.GetDetails());
-        });
-        return Task.FromResult(_temp.ToArray());
+        return await Task.WhenAll(Members.Select(m => m.GetDetails()));
     }
 
     public Task<ChatMsg[]> ReadHistory(int numberOfMessages)
@@ -73,4 +78,5 @@ public class ChannelGrain : Grain, IChannelGrain
     }
 
 
+    public record JoinChannelEvent(Guid channelId, string channelName);
 }

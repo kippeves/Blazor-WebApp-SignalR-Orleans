@@ -4,11 +4,13 @@ namespace Grains.Interfaces
 {
     public interface IChannelGrain : IGrainWithGuidKey
     {
-        Task Join(Guid id);
-        Task Leave(Guid id);
+        Task Join(IChatMemberGrain member);
+        Task Leave(IChatMemberGrain member);
         Task Message(ChatMsg msg);
         Task<ChatMsg[]> ReadHistory(int numberOfMessages);
-        Task<MemberDetails[]> GetMembers();
-
+        ValueTask<MemberDetails[]> GetMembers();
+        Task SetName(string name);
+        Task<string> GetName();
+        Task<bool> MemberIsInChannel(IChatMemberGrain member);
     }
 }

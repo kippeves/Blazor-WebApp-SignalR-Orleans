@@ -5,13 +5,13 @@ import { z } from 'zod';
 import { User } from './app/lib/definitions';
 async function LoginUser(login: LoginRequest): Promise<User | undefined> {
     try {
-        let Result = await fetch("http://localhost:5144/api/User/Control", {
+        let Result = await fetch(`${process.env.API_URL}/User/Control`, {
             "body": JSON.stringify(login),
             "method": "POST",
             headers: {
                 "Content-Type": "application/json",
             }
-        }).then(data => data.json()).then(x => x as User);
+        }).then().then(data => data.json()).then(x => x as User);
         return Promise.resolve<User>(Result);
     } catch (error) {
         console.error('Failed to fetch user:', error);

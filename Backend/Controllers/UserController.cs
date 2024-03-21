@@ -9,10 +9,13 @@ using Grains.Interfaces;
 using System.Text.Json;
 using Grains.Hubs;
 using Microsoft.AspNetCore.SignalR;
+using Grains.Interfaces.Abstractions;
+using Backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Controllers;
 
-[Route("api/[controller]")]
+[Route("backend/[controller]")]
 [ApiController]
 [Authorize]
 public class UserController(ApplicationDbContext context, IClusterClient cluster, IConfiguration config, IHubContext<ChatHub> hubContext, IChannelRepository channelRepository) : ControllerBase
@@ -29,12 +32,26 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
     [HttpPost("Control")]
     public IActionResult Control([FromBody] LoginRequest loginRequest)
     {
-        var User = _context.Users.Single(u => u.Email != null && u.Email.Equals(loginRequest.email));
-        return Extensions.VerifyPassword(loginRequest.password, User.Password, User.Salt) ? Ok(new UserDTO(id: User.UserId, name: User.UserName, email: User.Email)) : BadRequest();
+        try
+        {
+            var User = _context.Users.Single(u => u.Email != null && u.Email.Equals(loginRequest.email));
+            if (Extensions.VerifyPassword(loginRequest.password, User.Password, User.Salt))
+            {
+                var dto = new UserDTO(id: User.UserId, name: User.UserName, email: User.Email);
+                return Ok(dto);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.Write("Password not verified");
+            Console.Write(e.Message);
+            return new BadRequestObjectResult(e.Message);
+        }
+        return BadRequest();
     }
 
-    [HttpGet("Prefetch")]
-    public async Task<IActionResult> PrefetchData()
+    [HttpGet("Prefetch/Settings")]
+    public async Task<IActionResult> PrefetchSettings()
     {
         if (UserID == default)
             return BadRequest();
@@ -44,11 +61,24 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         return Ok(settings);
     }
 
+    [HttpGet("Prefetch/Messages")]
+    public async Task<IActionResult> PrefetchMessages()
+    {
+        if (UserID == default)
+            return BadRequest();
+
+        var user = _cluster.GetGrain<IChatMemberGrain>(UserID);
+        var Channel = await user.GetActiveChannelGrain();
+        if (Channel is null) return NoContent();
+        var messages = await Channel.ReadHistory(50);
+        return Ok(messages);
+    }
+
     [HttpPost("ChangeChannel")]
     public async Task<IActionResult> ChangeChannel([FromBody] ChannelChangeRequest request)
     {
         var userGrain = _cluster.GetGrain<IChatMemberGrain>(UserID);
-        await userGrain.ChangeChannel(request.id);
+        await userGrain.SetActiveChannel(request.id);
         return Ok();
     }
 
@@ -59,14 +89,15 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         if (!Guid.TryParse(request.id, out var id))
             return BadRequest();
 
-        var User = _context.Users.Single(u => u.UserId.Equals(id));
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Config["Jwt:Key"]));
+        var User = _context.Users.Include(u => u.Roles).Single(u => u.UserId.Equals(id));
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Config["Jwt:Key"]!));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
         var claims = new[] {
             new Claim(JwtRegisteredClaimNames.NameId, User.UserId.ToString()),
             new Claim(JwtRegisteredClaimNames.Sub, User.UserName),
             new Claim(JwtRegisteredClaimNames.Email, User.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim("Roles",string.Join(",",User.Roles.Select(r => r.Name))),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
         var Sectoken = new JwtSecurityToken(Config["Jwt:Issuer"],
@@ -90,9 +121,15 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
             UserName = obj.name,
             Email = obj.email,
             Password = hash,
-            Salt = salt
+            Salt = salt,
         };
         await _context.Users.AddAsync(newUser);
+        if (obj.role != null)
+        {
+            var name = obj.role.ToString();
+            var role = _context.Roles.Single(r => r.Name.ToLower().Equals(name));
+            newUser.Roles.Add(role);
+        }
         await _context.SaveChangesAsync();
         if (newUser.UserName != default)
         {
@@ -104,7 +141,11 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
     }
 };
 
-public record RegisterRequest(string name, string email, string password) { }
+public enum RegisterRole
+{
+    user = 0, moderator = 1, administrator = 2
+}
+public record RegisterRequest(string name, string email, string password, RegisterRole? role) { }
 public record LoginRequest(string email, string password);
 public record UserDTO(Guid id, string name, string email);
 public record TokenRequest(string id);

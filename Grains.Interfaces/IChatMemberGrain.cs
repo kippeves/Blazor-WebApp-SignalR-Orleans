@@ -9,8 +9,12 @@ namespace Grains.Interfaces
 
         Task<MemberDetails> GetDetails();
         Task<AppSettings> GetSettings();
-        Task ChangeChannel(Guid channelId);
+        Task SetActiveChannel(Guid? channelId);
         Task<Guid?> GetActiveChannel();
         Task SetMenu(bool isOpen);
+        ValueTask Switch(Guid newId);
+        ValueTask Leave(Guid id);
+        ValueTask Join(Guid id);
+        Task<IChannelGrain?> GetActiveChannelGrain();
     }
 }
