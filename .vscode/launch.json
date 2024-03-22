@@ -19,6 +19,20 @@
             "request": "launch",
             "projectPath": "${workspaceFolder}/Backend/Backend.csproj",
             "launchConfigurationId": "TargetFramework=;http"
+        },
+        {
+            "name": "C#: Backend [https]",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/Backend/Backend.csproj",
+            "launchConfigurationId": "TargetFramework=;https"
+        },
+        {
+            "name": "C#: Backend [https]",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/Backend/Backend.csproj",
+            "launchConfigurationId": "TargetFramework=;https"
         }
     ]
 }

@@ -48,7 +48,9 @@ namespace Backend.Services
             return await context.SaveChangesAsync() > 0;
         }
 
-        public IEnumerable<ChannelDTO> GetChannels() => context.Channels.Select(c => new ChannelDTO(c.Id, c.Name));
+        public IEnumerable<ChannelDTO> GetChannels() => context.Channels.Select(c => new ChannelDTO(c.Id, c.Name)).AsEnumerable();
+
+        public IEnumerable<Guid> GetListOfChannelIds() => context.Channels.Select(c => c.Id);
 
         public async Task<bool> SetNameForChannel(Guid id, string newName)
         {

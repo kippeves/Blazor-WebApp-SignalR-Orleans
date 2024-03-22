@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.SignalR;
 using Grains.Interfaces.Abstractions;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Backend.Controllers;
 
@@ -74,43 +75,6 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         return Ok(messages);
     }
 
-    [HttpPost("ChangeChannel")]
-    public async Task<IActionResult> ChangeChannel([FromBody] ChannelChangeRequest request)
-    {
-        var userGrain = _cluster.GetGrain<IChatMemberGrain>(UserID);
-        await userGrain.SetActiveChannel(request.id);
-        return Ok();
-    }
-
-    [AllowAnonymous]
-    [HttpPost("Token")]
-    public IActionResult GenerateToken([FromBody] TokenRequest request)
-    {
-        if (!Guid.TryParse(request.id, out var id))
-            return BadRequest();
-
-        var User = _context.Users.Include(u => u.Roles).Single(u => u.UserId.Equals(id));
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Config["Jwt:Key"]!));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-        var claims = new[] {
-            new Claim(JwtRegisteredClaimNames.NameId, User.UserId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, User.UserName),
-            new Claim(JwtRegisteredClaimNames.Email, User.Email),
-            new Claim("Roles",string.Join(",",User.Roles.Select(r => r.Name))),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        };
-
-        var Sectoken = new JwtSecurityToken(Config["Jwt:Issuer"],
-          Config["Jwt:Audience"],
-          claims,
-          expires: DateTime.Now.AddMinutes(120),
-          signingCredentials: credentials);
-
-        var token = new JwtSecurityTokenHandler().WriteToken(Sectoken);
-        return Ok(new TokenResult(token));
-    }
-
-
     [AllowAnonymous]
     [HttpPost("Register")]
     public async Task<IActionResult> RegisterAsync(RegisterRequest obj)
@@ -139,7 +103,26 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         }
         else return new BadRequestObjectResult("User couldn't be registered");
     }
+    public async Task<IActionResult> ChangeName(NameChangeRequest req)
+    {
+        var user = _context.Users.Find(req.id);
+        if (user is null) return BadRequest(new NameChangeResponse(false, "Could not find user"));
+
+        var sameName = _context.Users.Where(u => u.UserName.ToLower().Equals(req.newName.ToLower())).Any();
+        if (sameName) return BadRequest(new NameChangeResponse(false, "User with same name already exists. Please pick another name"));
+
+        user.UserName = req.newName;
+        var success = await _context.SaveChangesAsync() > 0;
+        if (success)
+        {
+            var userGrain = _cluster.GetGrain<IChatMemberGrain>(req.id);
+            await userGrain.SetName(req.newName);
+        }
+
+        return Ok(new NameChangeResponse(true, "Name has been changed"));
+    }
 };
+
 
 public enum RegisterRole
 {
@@ -148,6 +131,5 @@ public enum RegisterRole
 public record RegisterRequest(string name, string email, string password, RegisterRole? role) { }
 public record LoginRequest(string email, string password);
 public record UserDTO(Guid id, string name, string email);
-public record TokenRequest(string id);
-public record TokenResult(string token);
-public record ChannelChangeRequest(Guid id);
+public record NameChangeRequest(Guid id, string newName);
+public record NameChangeResponse(bool success, string? message);

@@ -1,6 +1,41 @@
-import type { NextAuthConfig } from 'next-auth';
+import type { NextAuthConfig, User } from 'next-auth';
+import jwt from 'jsonwebtoken'
+import { JWT } from 'next-auth/jwt';
+import { SignJWT } from 'jose';
 
-const baseURL = process.env.API_URL;
+const GenerateToken = (user: User, parentJWT: JWT) => {
+    return jwt.sign(
+        { id: user.id, name: user.name, email: user.email },
+        process.env.NEXTAUTH_SECRET,
+        {
+            subject: user.id,
+            audience: process.env.AUDIENCE,
+            issuer: process.env.ISSUER,
+            expiresIn: "1d",
+        }
+    );
+}
+
+const RefreshToken = async (token: string) => {
+
+    const secret = new TextEncoder().encode(
+        process.env.NEXTAUTH_SECRET
+    )
+    const alg = 'HS256'
+    var info = parseJwt(token)
+
+    return await new SignJWT({ id: info.id, name: info.name, email: info.email }) // details to  encode in the token
+        .setProtectedHeader({ alg }) // algorithm
+        .setIssuedAt()
+        .setIssuer("http://localhost:3000") // issuer
+        .setAudience("http://localhost:5144") // audience
+        .setExpirationTime("1 day") // token expiration time, e.g., "1 day"
+        .sign(secret); // secretKey generated from previous step
+}
+
+const VerifyToken = (token: string) => (parseJwt(token).exp * 1000) < Date.now()
+
+
 
 export const authConfig = {
     pages: {
@@ -21,13 +56,21 @@ export const authConfig = {
                 else return true;
             }
         },
-        async jwt({ token, user }) {
-            if (token && user) {
-                const result = await fetchToken(token.sub!);
-                token.token = result.token;
+        async jwt({ token, user, session, trigger }) {
+            const validSession = true;
+            if (trigger === 'signIn') {
+                token.token = GenerateToken(user, token);
+            }
+            
+            if (token && token.token !== undefined) {
+                const innerToken = token.token as string;
+                if (!VerifyToken(innerToken)) {
+                    token.Token = RefreshToken(innerToken);
+                }
             }
             const newToken = { ...token };
-            return { ...newToken };
+            const newSession = { ...session };
+            return { ...newToken, ...newSession };
         },
         async session({ session, token }) {
             session.user.token = token.token as string;
@@ -38,18 +81,10 @@ export const authConfig = {
     providers: [], // Add providers with an empty array for now
 } satisfies NextAuthConfig;
 
-const fetchToken = async (id: string) => await fetch(`${baseURL}/User/Token`, {
-    "body": JSON.stringify({ id: id }),
-    "method": "POST",
-    headers: {
-        "Content-Type": "application/json",
-    }
-}).then(data => data.json())
-
 const parseJwt = (token: string) => {
     var base64Url = token.split('.')[1];
     var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
 

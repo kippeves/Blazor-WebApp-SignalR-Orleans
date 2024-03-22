@@ -19,7 +19,7 @@ async function LoginUser(login: LoginRequest): Promise<User | undefined> {
     }
 }
 
-export const { auth, signIn, signOut } = NextAuth({
+export const { auth, signIn, signOut, handlers } = NextAuth({
     ...authConfig,
     providers: [Credentials({
         async authorize(credentials) {
@@ -29,7 +29,7 @@ export const { auth, signIn, signOut } = NextAuth({
             if (parsedCredentials.success) {
                 const result = await LoginUser({ email: parsedCredentials.data.email, password: parsedCredentials.data.password });
                 if (result == undefined) { return null; }
-                return await result;
+                return result;
             }
 
             console.log('Invalid credentials');

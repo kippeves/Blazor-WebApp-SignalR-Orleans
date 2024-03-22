@@ -8,7 +8,7 @@ import { HubConnectionState } from "@microsoft/signalr";
 import { ChannelState } from "@/app/lib/definitions";
 
 export default function ChatClient() {
-    const { activeChannel, Messages, AddMessage, setChannelState, channelState, SetConnected } = useContext(UserContext);
+    const { activeChannel, Messages, AddMessage, setChannelState, channelState } = useContext(UserContext);
     const { Hub } = useContext(SignalRContext);
     const [message, setMessage] = useState("");
     const Connection = Hub.connection;
@@ -20,11 +20,10 @@ export default function ChatClient() {
     };
 
     useEffect(() => {
+        if (Connection.state !== HubConnectionState.Connected) return;
         setChannelState(ChannelState.Switching);
-        if (Connection.state === HubConnectionState.Connected)
-            Connection.send("SwitchChannel", activeChannel);
-
-    }, [activeChannel])
+        Connection.send("SwitchChannel", activeChannel);
+    }, [activeChannel, Connection.state])
 
     const messagesEndRef = useRef(null)
     Hub.useSignalREffect("ReceiveMessage", AddMessage, []);
@@ -34,10 +33,6 @@ export default function ChatClient() {
     useEffect(() => {
         scrollToBottom();
     }, [Messages])
-
-    useEffect(() => {
-        SetConnected();
-    }, [])
 
     return (<>
         <Toolbar sx={{ marginBottom: 2 }} />

@@ -7,11 +7,26 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Backend.Services;
 using Microsoft.Azure.Cosmos;
+using System.Net;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source = AppDb.db"));
+
+builder.WebHost.UseKestrel((context, serverOptions) =>
+{
+    var port = 7084;
+    var pfxFilePath = builder.Environment.ContentRootPath + "/certificate.pfx";
+    var pfxPassword = "Password1!";
+
+    serverOptions.Listen(IPAddress.Any, port, listenOptions =>
+    {
+        listenOptions.Protocols = HttpProtocols.Http1AndHttp2AndHttp3;
+        listenOptions.UseHttps(pfxFilePath, pfxPassword);
+    });
+});
 
 builder.Services.AddAuthentication(options =>
     {
@@ -25,7 +40,7 @@ builder.Services.AddAuthentication(options =>
         {
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
-            ValidateLifetime = false,
+            ValidateLifetime = true,
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateIssuerSigningKey = true
@@ -33,11 +48,11 @@ builder.Services.AddAuthentication(options =>
         };
         o.Events = new JwtBearerEvents
         {
-            OnChallenge = context =>
+            OnChallenge = async context =>
             {
-                Console.WriteLine("Failure: " + context.AuthenticateFailure);
-                Console.WriteLine("error: " + context.ErrorDescription);
-                return Task.CompletedTask;
+                Console.WriteLine(context.AuthenticateFailure?.Message);
+                Console.WriteLine(context.ErrorDescription);
+                await Task.CompletedTask;
             },
             OnMessageReceived = context =>
             {
@@ -102,7 +117,7 @@ using (var scope = app.Services.CreateScope())
 }
 app.UseCors(builder =>
         builder
-        .WithOrigins("http://192.168.2.124:3000")
+        .WithOrigins("https://192.168.2.124:3000")
         .AllowCredentials()
         .AllowAnyMethod()
         .AllowAnyHeader());

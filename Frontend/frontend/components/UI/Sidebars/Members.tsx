@@ -35,13 +35,13 @@ export default function Members() {
             <Box display={"flex"} flexDirection={"column"} height={'100%'}>
                 <List>
                     {
-                        Members && Members.map((channel, index) => (
+                        Members && Members.map((member, index) => (
                             <ListItem key={index} disablePadding sx={{ display: 'block' }}>
                                 <ListItemButton disableGutters>
                                     <ListItemIcon>
                                         <Avatar>{index}</Avatar>
                                     </ListItemIcon>
-                                    <ListItemText primary={channel.chatName} sx={{ marginLeft: 2 }} />
+                                    <ListItemText primary={member.name} sx={{ marginLeft: 2 }} />
                                 </ListItemButton>
                             </ListItem>
                         ))

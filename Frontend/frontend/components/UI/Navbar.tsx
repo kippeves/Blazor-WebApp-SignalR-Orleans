@@ -17,7 +17,7 @@ type Setting = {
     action: (() => void) | null,
 }
 
-const pages = ['Products', 'Pricing', 'Blog'];
+const pages = ['Chat'];
 
 function ResponsiveAppBar() {
     const router = useRouter();
@@ -39,11 +39,16 @@ function ResponsiveAppBar() {
         setAnchorElUser(null);
     };
 
-    const GoToProfile = () => {
+    const GoToProfile = async () => {
         router.push("/chat/profile", { scroll: false })
-        console.log("Going")
         handleCloseUserMenu();
     }
+
+    const GoToPage = async (page: string) => {
+        router.push(`/${page}`, { scroll: false })
+        handleCloseUserMenu();
+    }
+
 
     const settings = [{ name: "Profile", action: GoToProfile }, { name: 'Account', action: handleCloseUserMenu }, { name: 'Dashboard', action: handleCloseUserMenu }, { name: 'Log Out', action: null }] as Setting[];
 
@@ -60,18 +65,17 @@ function ResponsiveAppBar() {
                 variant="h6"
                 noWrap
                 component="a"
-                href="#app-bar-with-responsive-menu"
+                onClick={() => GoToPage("Chat")}
                 sx={{
                     mr: 2,
                     display: { xs: 'none', md: 'flex' },
                     fontWeight: 700,
                     color: 'inherit',
                     textDecoration: 'none',
-                }}
-            >
-                Test
-            </Typography>
-
+                    cursor: "pointer"
+                }}>
+                Chat
+            </Typography >
             <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
                 <IconButton
                     size="large"
@@ -102,7 +106,7 @@ function ResponsiveAppBar() {
                     }}
                 >
                     {pages.map((page) => (
-                        <MenuItem key={page} onClick={handleCloseNavMenu}>
+                        <MenuItem key={page} onClick={() => GoToPage(page)}>
                             <Typography textAlign="center">{page}</Typography>
                         </MenuItem>
                     ))}
@@ -128,13 +132,13 @@ function ResponsiveAppBar() {
                 {pages.map((page) => (
                     <Button
                         key={page}
-                        onClick={handleCloseNavMenu}
+                        onClick={() => GoToPage(page)}
                         sx={{ my: 2, color: 'white', display: 'block' }}
                     >
                         {page}
                     </Button>
                 ))}
-            </Box>
+            </Box >
             <Box sx={{ flexGrow: 0 }}>
                 <Tooltip title="Open settings">
                     <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>

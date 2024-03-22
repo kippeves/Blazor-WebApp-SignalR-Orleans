@@ -3,6 +3,7 @@ using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Protocol;
+using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Concurrency;
 using Orleans.Runtime;
@@ -15,14 +16,18 @@ public class ChannelGrain : Grain, IChannelGrain
 {
     private readonly HubContext<ChatHub> _hubContext;
     private readonly IPersistentState<ChannelDetails> _state;
+    private readonly ILogger<IChannelGrain> _logger;
 
     public ChannelGrain(
         [PersistentState(
         stateName: "Channel")]
-        IPersistentState<ChannelDetails> state
+        IPersistentState<ChannelDetails> state,
+        ILogger<IChannelGrain> logger
         )
     {
+
         _state = state;
+        _logger = logger;
         _hubContext = GrainFactory.GetHub<ChatHub>();
     }
 
@@ -38,16 +43,22 @@ public class ChannelGrain : Grain, IChannelGrain
     }
     public Task<bool> MemberIsInChannel(IChatMemberGrain member) => Task.FromResult(Members.Contains(member));
 
-    public Task Join(IChatMemberGrain member)
+    public async Task Join(IChatMemberGrain member)
     {
         Members.Add(member);
-        return Task.CompletedTask;
+        var keyId = member.GetPrimaryKey().ToString();
+        var name = await member.GetName();
+        _logger.LogInformation("[{keyId}]: {name} joined", keyId, name);
+        await Task.CompletedTask;
     }
 
-    public Task Leave(IChatMemberGrain member)
+    public async Task Leave(IChatMemberGrain member)
     {
         Members.Remove(member);
-        return Task.CompletedTask;
+        var keyId = member.GetPrimaryKey().ToString();
+        var name = await member.GetName();
+        _logger.LogInformation("[{keyId}]: {name} left", keyId, name);
+        await Task.CompletedTask;
     }
 
     public async Task Message(ChatMsg msg)

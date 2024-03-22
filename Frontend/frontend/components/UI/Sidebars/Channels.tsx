@@ -1,58 +1,55 @@
 'use client'
-import { Toolbar, ListItemIcon, ListItemButton, List, ListItem, ListItemText, CSSObject, Theme, styled, Avatar, Icon, Divider, ListItemAvatar, Box } from "@mui/material";
+import { Toolbar, ListItemIcon, ListItemButton, List, ListItem, ListItemText, CSSObject, Theme, styled, Divider, Box } from "@mui/material";
 import MuiDrawer from '@mui/material/Drawer';
 import React, { memo, useContext, useState } from "react";
-import { ChannelState, ChatChannel } from "@/app/lib/definitions";
-import { ChevronLeft, ChevronRight, DoorBack, FireExtinguisher, Person } from "@mui/icons-material";
+import { ChatChannel } from "@/app/lib/definitions";
+import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { SignalRContext } from "@/app/providers/SignalRContext";
 import ChannelIcon from "../ChannelIcon";
-import ImageIcon from '@mui/icons-material/Image';
-
 import { UserContext } from "@/app/providers/UserContext";
-import { UUID } from "crypto";
-
-
 const drawerWidth = 200;
 
-const openedMixin = (theme: Theme): CSSObject => ({
-    width: drawerWidth,
-    transition: theme.transitions.create('width', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.enteringScreen,
-    }),
-    overflowX: 'hidden',
-});
-
-const closedMixin = (theme: Theme): CSSObject => ({
-    transition: theme.transitions.create('width', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-    }),
-    overflowX: 'hidden',
-    width: `calc(${theme.spacing(9)} + 1px)`,
-    [theme.breakpoints.up('sm')]: {
-        width: `calc(${theme.spacing(9)} + 1px)`,
-    },
-});
-
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
-    ({ theme, open }) => ({
-        width: drawerWidth,
-        flexShrink: 0,
-        whiteSpace: 'nowrap',
-        boxSizing: 'border-box',
-        ...(open && {
-            ...openedMixin(theme),
-            '& .MuiDrawer-paper': openedMixin(theme),
-        }),
-        ...(!open && {
-            ...closedMixin(theme),
-            '& .MuiDrawer-paper': closedMixin(theme),
-        }),
-    }),
-);
 
 export default function Channels() {
+
+    const openedMixin = (theme: Theme): CSSObject => ({
+        width: drawerWidth,
+        transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
+        overflowX: 'hidden',
+    });
+
+    const closedMixin = (theme: Theme): CSSObject => ({
+        transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+        }),
+        overflowX: 'hidden',
+        width: `calc(${theme.spacing(9)} + 1px)`,
+        [theme.breakpoints.up('sm')]: {
+            width: `calc(${theme.spacing(9)} + 1px)`,
+        },
+    });
+
+    const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
+        ({ theme, open }) => ({
+            width: drawerWidth,
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+            boxSizing: 'border-box',
+            ...(open && {
+                ...openedMixin(theme),
+                '& .MuiDrawer-paper': openedMixin(theme),
+            }),
+            ...(!open && {
+                ...closedMixin(theme),
+                '& .MuiDrawer-paper': closedMixin(theme),
+            }),
+        }),
+    );
+
     const { Channels, activeChannel, setActiveChannel } = useContext(UserContext)
     const { Hub } = useContext(SignalRContext);
     const [menuOpen, setMenuState] = useState(false);
@@ -73,6 +70,8 @@ export default function Channels() {
             ))
         )
     })
+
+    CachedComponents.displayName = "CachedComponents";
 
 
 

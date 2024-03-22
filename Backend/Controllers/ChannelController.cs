@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Grains.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,12 +19,18 @@ public class ChannelController(IChannelRepository channelRepository, IClusterCli
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetMembers(Guid id)
+    public async Task<IActionResult> GetMembers()
     {
-        var channel = cluster.GetGrain<IChannelGrain>(id);
-        var members = await channel.GetMembers();
-        return members is not null ? Ok(members) : BadRequest();
-
+        var channels = channelRepository.GetListOfChannelIds();
+        List<ChatMemberDTO> exportMembers = [];
+        foreach (var channel in channels)
+        {
+            var members = await cluster.GetGrain<IChannelGrain>(channel).GetMembers();
+            exportMembers.AddRange(members.Select(m => new ChatMemberDTO(m.id, m.chatName, m.pictureURL)));
+        }
+        var listJson = JsonSerializer.Serialize(exportMembers);
+        Console.WriteLine(listJson);
+        return Ok(exportMembers);
     }
 
     [HttpPost]

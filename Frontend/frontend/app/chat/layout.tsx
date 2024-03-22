@@ -23,10 +23,11 @@ export default async function Layout(props: { children: React.ReactNode }) {
             'Authorization': 'Bearer ' + User.token
         } as RawAxiosRequestHeaders,
     });
+
     var Settings = await Client.get<AppSettings>('/User/Prefetch/Settings').then(res => res.data);
-    const isEnabled = true;
+    const isEnabled = false;
     return (
-        isEnabled && <Providers>
+        <Providers>
             <SignalRContextProvider Token={User.token}>
                 <TokenContextProvider Token={User.token}>
                     <ApiContextProvider>
