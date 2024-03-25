@@ -27,7 +27,7 @@ public class ChatHub(IClusterClient clusterClient) : Hub
         var user = GetUser(id);
         var channel = await user.GetActiveChannelGrain();
         if (channel is null) return;
-        await channel.Message(new ChatMsg("name", message));
+        await channel.Message(new ChatMsg(id, "name", message, DateTime.Now));
     }
 
     [HubMethodName("SwitchChannel")]

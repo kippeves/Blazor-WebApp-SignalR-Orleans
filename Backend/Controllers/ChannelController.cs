@@ -1,51 +1,63 @@
 using System.Text.Json;
 using Grains.Interfaces;
+using Grains.Interfaces.Abstractions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
 
-[Authorize]
+
 [ApiController]
 [Route("backend/[controller]/[action]")]
-public class ChannelController(IChannelRepository channelRepository, IClusterClient cluster) : ControllerBase
+public class ChannelController(IChannelRepository channelRepository, IClusterClient cluster, ILogger<ChannelController> logger) : ControllerBase
 {
     private readonly IChannelRepository channelRepository = channelRepository;
     private readonly IClusterClient cluster = cluster;
+    private readonly ILogger<ChannelController> logger = logger;
 
     [HttpGet]
-    public IActionResult GetChannels()
+    [Authorize]
+    public async IAsyncEnumerable<ChannelDTO> GetChannels()
     {
-        var x = channelRepository.GetChannels();
-        return Ok(channelRepository.GetChannels());
+        await foreach (var channel in channelRepository.GetChannels())
+        {
+            yield return channel;
+        }
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetMembers()
+    [Authorize]
+    public async IAsyncEnumerable<ChatMemberDTO> GetMembers()
     {
         var channels = channelRepository.GetListOfChannelIds();
-        List<ChatMemberDTO> exportMembers = [];
-        foreach (var channel in channels)
+        await foreach (var channel in channels)
         {
             var members = await cluster.GetGrain<IChannelGrain>(channel).GetMembers();
-            exportMembers.AddRange(members.Select(m => new ChatMemberDTO(m.id, m.chatName, m.pictureURL)));
+            foreach (var member in members)
+            {
+                yield return new ChatMemberDTO(member.id, member.chatName, member.pictureURL);
+            }
         }
-        var listJson = JsonSerializer.Serialize(exportMembers);
-        Console.WriteLine(listJson);
-        return Ok(exportMembers);
     }
 
     [HttpPost]
-    public async Task<IActionResult> GetMessages([FromBody] FetchMessagesDTO dto)
+    [Authorize]
+    public async IAsyncEnumerable<ChatMsg> GetMessages([FromBody] FetchMessagesDTO dto)
     {
-        if (!Guid.TryParse(dto.id, out var id)) return BadRequest();
+        if (!Guid.TryParse(dto.id, out var id)) yield break;
         var channel = cluster.GetGrain<IChannelGrain>(id);
         var messages = await channel.ReadHistory(dto.amount);
-        return messages != null ? Ok(messages) : BadRequest();
+        foreach (var message in messages)
+        {
+            yield return message;
+        }
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> Edit([FromBody] NameChangeDTO dto) => await channelRepository.SetNameForChannel(dto.id, dto.newName) ? Ok() : BadRequest();
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> Add([FromBody] AddChannelDTO dto) => await channelRepository.AddChannelAsync(dto.Name, dto.Description, dto.Category) ? Ok() : BadRequest();
 };
 

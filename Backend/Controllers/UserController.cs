@@ -1,26 +1,22 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.IdentityModel.Tokens.Jwt;
 using Shared.Extensions;
 using Grains.Interfaces;
-using System.Text.Json;
 using Grains.Hubs;
 using Microsoft.AspNetCore.SignalR;
-using Grains.Interfaces.Abstractions;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http.HttpResults;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Backend.Controllers;
 
 [Route("backend/[controller]")]
 [ApiController]
-[Authorize]
 public class UserController(ApplicationDbContext context, IClusterClient cluster, IConfiguration config, IHubContext<ChatHub> hubContext, IChannelRepository channelRepository) : ControllerBase
 {
+    static string ErrorMessage = "The {0} is already registered to a existing account. Please pick another {0}.";
+    private static string CreateErrormessage(string category) => string.Format(ErrorMessage, category);
     private readonly ApplicationDbContext _context = context;
     private readonly IClusterClient _cluster = cluster;
     private readonly IHubContext<ChatHub> hubContext = hubContext;
@@ -29,8 +25,8 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
     private IConfiguration Config { get; } = config;
     private Guid UserID => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ID) ? ID : default;
 
-    [AllowAnonymous]
     [HttpPost("Control")]
+    [ApiKey]
     public IActionResult Control([FromBody] LoginRequest loginRequest)
     {
         try
@@ -38,8 +34,7 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
             var User = _context.Users.Single(u => u.Email != null && u.Email.Equals(loginRequest.email));
             if (Extensions.VerifyPassword(loginRequest.password, User.Password, User.Salt))
             {
-                var dto = new UserDTO(id: User.UserId, name: User.UserName, email: User.Email);
-                return Ok(dto);
+                return Ok(new UserDTO(id: User.UserId, name: User.UserName, email: User.Email));
             }
         }
         catch (Exception e)
@@ -51,6 +46,29 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         return BadRequest();
     }
 
+    [HttpGet("control/email")]
+    [ApiKey]
+    public async Task<IActionResult> ControlEmail(string value)
+    {
+        try
+        {
+            await _context.Users.SingleAsync(u => u.Email.Equals(value));
+            return Ok(false);
+        }
+        catch { return Ok(true); }
+    }
+
+    [ApiKey]
+    [HttpGet("control/username")]
+    public async Task<IActionResult> ControlUsername(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return BadRequest(new RegisterControlResponse(false, "No username was submitted"));
+        return await _context.Users.AnyAsync(u => u.UserName.Equals(value))
+            ? new BadRequestObjectResult(new RegisterControlResponse(false, CreateErrormessage("username")))
+            : Ok(new RegisterControlResponse(true, null));
+    }
+
+    [Authorize]
     [HttpGet("Prefetch/Settings")]
     public async Task<IActionResult> PrefetchSettings()
     {
@@ -62,6 +80,7 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         return Ok(settings);
     }
 
+    [Authorize]
     [HttpGet("Prefetch/Messages")]
     public async Task<IActionResult> PrefetchMessages()
     {
@@ -75,7 +94,7 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         return Ok(messages);
     }
 
-    [AllowAnonymous]
+    [ApiKey]
     [HttpPost("Register")]
     public async Task<IActionResult> RegisterAsync(RegisterRequest obj)
     {
@@ -103,6 +122,9 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         }
         else return new BadRequestObjectResult("User couldn't be registered");
     }
+
+    [HttpPost]
+    [Authorize]
     public async Task<IActionResult> ChangeName(NameChangeRequest req)
     {
         var user = _context.Users.Find(req.id);
@@ -133,3 +155,5 @@ public record LoginRequest(string email, string password);
 public record UserDTO(Guid id, string name, string email);
 public record NameChangeRequest(Guid id, string newName);
 public record NameChangeResponse(bool success, string? message);
+public record RegisterControlRequest(string value);
+public record RegisterControlResponse(bool isSuccess, string? message);

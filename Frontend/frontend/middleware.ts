@@ -1,9 +1,6 @@
-import NextAuth from 'next-auth';
-import { authConfig } from './auth.config';
-
-export default NextAuth(authConfig).auth;
+export { auth as middleware } from "auth"
 
 export const config = {
     // https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
-    matcher: ['/((?!channel|undefined|backend|_next/static|_next/image|favicon.ico|.*\\.png$).*)'],
+    matcher: ['/((?!api|Channel|channel|undefined|backend|_next/static|_next/image|favicon.ico|.*\\.png$).*)'],
 };

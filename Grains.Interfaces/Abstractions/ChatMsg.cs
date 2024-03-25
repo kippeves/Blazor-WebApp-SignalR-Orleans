@@ -4,8 +4,10 @@ namespace Grains.Interfaces.Abstractions;
 
 [GenerateSerializer]
 public record class ChatMsg(
+    Guid id,
     string User,
-    string Message)
+    string Message,
+    DateTime Created)
 {
     [Id(0)]
     public Guid id { get; set; } = Guid.NewGuid();

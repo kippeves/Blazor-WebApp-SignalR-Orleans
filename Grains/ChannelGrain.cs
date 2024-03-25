@@ -81,9 +81,7 @@ public class ChannelGrain : Grain, IChannelGrain
     {
         var response = _state.State._messages
             .OrderByDescending(x => x.Created)
-            .Take(numberOfMessages)
-            .OrderBy(x => x.Created)
-            .ToArray();
+            .Take(numberOfMessages).ToArray();
 
         return Task.FromResult(response);
     }

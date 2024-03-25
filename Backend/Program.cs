@@ -9,11 +9,15 @@ using Backend.Services;
 using Microsoft.Azure.Cosmos;
 using System.Net;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Newtonsoft.Json;
+using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source = AppDb.db"));
+
+
 
 builder.WebHost.UseKestrel((context, serverOptions) =>
 {
@@ -50,8 +54,12 @@ builder.Services.AddAuthentication(options =>
         {
             OnChallenge = async context =>
             {
-                Console.WriteLine(context.AuthenticateFailure?.Message);
-                Console.WriteLine(context.ErrorDescription);
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(context.Request.Headers));
+                await Task.CompletedTask;
+            },
+            OnAuthenticationFailed = async context =>
+            {
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(context.Request.Headers));
                 await Task.CompletedTask;
             },
             OnMessageReceived = context =>
@@ -70,6 +78,8 @@ builder.Services.AddAuthentication(options =>
             }
         };
     });
+builder.Services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
+builder.Services.AddScoped<ApiKeyAuthFilter>();
 builder.Services.AddAuthorization();
 
 const string cosmosConnection = "AccountEndpoint=https://10.211.55.5:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";

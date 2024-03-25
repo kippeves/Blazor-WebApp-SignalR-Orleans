@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 
 public interface IChannelRepository
 {
-    public IEnumerable<ChannelDTO> GetChannels();
-    public IEnumerable<Guid> GetListOfChannelIds();
+    public IAsyncEnumerable<ChannelDTO> GetChannels();
+    public IAsyncEnumerable<Guid> GetListOfChannelIds();
     public Task<bool> AddChannelAsync(string name, string category);
     public Task<bool> AddChannelAsync(string name, string? description, string? category);
     public Task<bool> SetNameForChannel(Guid id, string newName);

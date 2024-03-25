@@ -1,6 +1,18 @@
-import { Container, Grid, Toolbar } from "@mui/material";
+import { auth } from "@/auth";
+import { Grid } from "@mui/material";
+import { SessionProvider } from "next-auth/react";
+import ProfilePage from "./components/profile-page";
 
-export default function Page() {
+export default async function Page() {
+    const session = await auth();
+
+    if (session?.user) {
+        session.user = {
+            name: session.user.name,
+            email: session.user.email,
+            image: session.user.image
+        }
+    }
     return (
         <Grid
             container
@@ -11,7 +23,9 @@ export default function Page() {
             sx={{ minHeight: '100vh' }}
         >
             <Grid item display={"flex"} xs={3} justifyContent='center' alignItems="center">
-                Hi
+                <SessionProvider basePath={"/api/auth"} session={session} refetchOnWindowFocus={false} >
+                    <ProfilePage />
+                </SessionProvider>
             </Grid>
         </Grid>
     )
