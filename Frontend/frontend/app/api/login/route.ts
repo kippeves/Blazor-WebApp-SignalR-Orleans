@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import { getSession } from "next-auth/react";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {

@@ -4,19 +4,23 @@ import { MessageObj } from "@/lib/definitions";
 import { AppContext } from "@/providers/AppContext";
 import { Box, Toolbar, Grid, TextField, Button, Chip } from "@mui/material";
 import { grey } from "@mui/material/colors";
+import { effect } from "@preact/signals-react";
 import { useSignals } from "@preact/signals-react/runtime";
-import { useQuery } from "@tanstack/react-query";
+import { dataTagSymbol, useMutation, useQuery } from "@tanstack/react-query";
 import { FormEvent, useContext, useEffect, useRef, useState } from "react";
+import MessageListPlaceholder from "./message-placeholder";
 
 export default function MessageList() {
+    useSignals()
     const app = useContext(AppContext)
     const Messages = app.Messages;
     const CurrentChannelId = app.CurrentChannel
     const [message, setMessage] = useState("")
-    useSignals()
     const Token = app.Token;
+    const { newMessage } = app.SignalR.value
 
-    const { data: ApiMessages } = useQuery<MessageObj[]>({ queryKey: ["messages", CurrentChannelId.value], queryFn: () => useFetch('/channel/GetMessages', "POST", { id: CurrentChannelId.value, amount: '50' }, Token) })
+    const { data: ApiMessages } = useQuery<MessageObj[]>({ queryKey: ["messages", CurrentChannelId.value], queryFn: () => useFetch('/channel/GetMessages', "POST", { id: CurrentChannelId.value, amount: '50' }, Token), enabled: app.CurrentChannel.value !== undefined })
+
 
     useEffect(() => {
         Messages.value = ApiMessages ?? Messages.value
@@ -25,16 +29,14 @@ export default function MessageList() {
 
     const SendMessage = (e: FormEvent) => {
         e.preventDefault();
-        /*        Connection
-                    .send("SendMessage", message)
-                    .then(_ => setMessage(""));*/
+        newMessage({ id: CurrentChannelId.value, message: message });
+        setMessage("")
     };
+
     const messagesEndRef = useRef(null)
 
-
-
     return (
-        <Box display={"flex"} flexDirection={"column"}>
+        <Box display={"flex"} flexDirection={"column"} >
             <Toolbar sx={{ marginBottom: 2 }} />
             <Grid flexGrow={3} mb={2} display={'flex'} flexDirection={'column'} justifyContent={'flex-end'}>
                 {
@@ -45,7 +47,7 @@ export default function MessageList() {
                 <TextField ref={messagesEndRef} id="messageArea" value={message} onChange={e => setMessage(e.target.value)} fullWidth label="Enter your message" variant="standard" />
                 <Button type="submit">Send</Button>
             </Box>
-        </Box>
+        </Box >
     )
 }
 

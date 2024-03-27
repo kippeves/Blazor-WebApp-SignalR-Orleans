@@ -1,4 +1,5 @@
 using Grains.Interfaces.Abstractions;
+using Grains.Interfaces.Observers;
 
 namespace Grains.Interfaces
 {

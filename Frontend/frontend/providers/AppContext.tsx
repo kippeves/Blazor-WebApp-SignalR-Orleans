@@ -5,41 +5,37 @@ import { Signal, computed, effect, signal } from "@preact/signals-react";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { UUID } from "node:crypto";
-import React from "react";
+import React, { useEffect } from "react";
 import { createSignalRContext } from "react-signalr";
-import { Context, Hub } from "react-signalr/lib/signalr/types";
+import { Connector } from "./Connectors/signal-r";
 
 const MESSAGES_LOCALS_KEY = "MESSAGES";
 
 const Messages = signal<MessageObj[]>([]);
 const userList = signal<MemberObj[]>([]);
-const Hub = signal<Context<Hub<string, string>>>(undefined)
-const hubConnection = computed(() => Hub.value.connection)
 const ConnectionStatus = signal(ClientState.NotConnected);
 const CurrentChannel = signal<UUID>(undefined);
 const Channels = signal<ChannelObj[]>([]);
 const SidebarOpen = signal(true)
+const Hub = signal(createSignalRContext())
 
+const SignalR = signal(undefined)
+const connectorType = typeof (Connector);
 export type AppContextType = {
     Token: string,
-    Hub: Signal<Context<Hub<string, string>>>
+    SignalR: Signal<Connector>,
     Channels: Signal<ChannelObj[]>
     Messages: Signal<MessageObj[]>
     CurrentChannel: Signal<UUID>
-    ConnectionStatus: Signal<ClientState>
+    ChannelStatus: Signal<ClientState>
     SidebarOpen: Signal<boolean>
 };
 
+
 const AppContext = React.createContext<AppContextType | null>(null);
-
-const AppContextProvider: React.FC<{ children: React.ReactNode, Hub: Context<Hub<string, string>> }> = (props: { children: React.ReactNode, Hub: Context<Hub<string, string>> }) => {
-    console.debug("Context refreshing")
-    var user = useSession();
-    var Token = user.data.user.token;
-    Hub.value = props.Hub;
-
+const AppContextProvider: React.FC<{ children: React.ReactNode, Token: string }> = (props: { children: React.ReactNode, Token: string }) => {
     return (
-        <AppContext.Provider value={{ Token, Hub, Channels, ConnectionStatus, CurrentChannel, Messages, SidebarOpen }}>
+        <AppContext.Provider value={{ Token: props.Token, SignalR, Channels, ChannelStatus: ConnectionStatus, CurrentChannel, Messages, SidebarOpen }}>
             {props.children}
         </AppContext.Provider>
     );

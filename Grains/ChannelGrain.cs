@@ -1,31 +1,25 @@
 using Grains.Hubs;
 using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.Concurrency;
 using Orleans.Runtime;
-using OrleansCodeGen.Orleans;
 using SignalR.Orleans.Core;
 
 namespace Grains;
 [Reentrant]
 public class ChannelGrain : Grain, IChannelGrain
 {
+    private string GrainId => this.GetPrimaryKeyString();
     private readonly HubContext<ChatHub> _hubContext;
     private readonly IPersistentState<ChannelDetails> _state;
     private readonly ILogger<IChannelGrain> _logger;
 
     public ChannelGrain(
-        [PersistentState(
-        stateName: "Channel")]
-        IPersistentState<ChannelDetails> state,
+        [PersistentState(stateName: "Channel")] IPersistentState<ChannelDetails> state,
         ILogger<IChannelGrain> logger
         )
     {
-
         _state = state;
         _logger = logger;
         _hubContext = GrainFactory.GetHub<ChatHub>();
@@ -63,13 +57,9 @@ public class ChannelGrain : Grain, IChannelGrain
 
     public async Task Message(ChatMsg msg)
     {
-        Console.WriteLine("sendering message now");
         _state.State._messages.Add(msg);
         await _state.WriteStateAsync();
-        var payload = new InvocationMessage("ReceiveMessage", [msg]);
-        Console.WriteLine(msg.ToString());
-        var keyStr = this.GetPrimaryKeyString();
-        await _hubContext.Group(keyStr).Send(payload);
+        await _hubContext.Group(GrainId).Send(new("ReceiveMessage", [msg]));
     }
 
     public async ValueTask<MemberDetails[]> GetMembers()

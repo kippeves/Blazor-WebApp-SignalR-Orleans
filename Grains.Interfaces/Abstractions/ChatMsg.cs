@@ -1,18 +1,14 @@
-﻿using Orleans;
-
-namespace Grains.Interfaces.Abstractions;
+﻿namespace Grains.Interfaces.Abstractions;
 
 [GenerateSerializer]
 public record class ChatMsg(
-    Guid id,
-    string User,
-    string Message,
-    DateTime Created)
+    Guid UserId,
+    string Message)
 {
     [Id(0)]
-    public Guid id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.NewGuid();
     [Id(1)]
-    public string User { get; init; } = User;
+    public Guid UserId { get; init; } = UserId;
 
     [Id(2)]
     public string Message { get; set; } = Message;

@@ -1,5 +1,5 @@
 'use server';
-import { auth, signIn } from '../auth';
+import { auth, signIn, signOut } from '../auth';
 import { AuthError } from 'next-auth';
 import { ControlResponse } from './definitions';
 import useFetch from './apiClient';
@@ -27,8 +27,7 @@ export const LogIn = async (values: { email: string, password: string }) => auth
 
 export async function checkEmail(email: string) {
     try {
-        const { data, status } = await useFetch("user/control/email", "GET", { value: email }, undefined, APIKEY)
-        if (status === undefined) return data;
+        return await useFetch("user/control/email", "GET", { value: email }, undefined, APIKEY)
     } catch (e) {
         console.debug(e)
         return false;
@@ -36,7 +35,7 @@ export async function checkEmail(email: string) {
 }
 
 export const checkUsername = async (userName: string) => {
-    const { data, status } = await await useFetch("user/control/username", "GET", { value: userName }, undefined, APIKEY)
-    if (status === undefined)
-        return data;
+    return await await useFetch("user/control/username", "GET", { value: userName }, undefined, APIKEY)
 }
+
+export const LogOut = async () => await signOut();

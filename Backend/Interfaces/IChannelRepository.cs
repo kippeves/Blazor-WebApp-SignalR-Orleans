@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
-
 public interface IChannelRepository
 {
     public IAsyncEnumerable<ChannelDTO> GetChannels();

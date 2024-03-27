@@ -7,20 +7,17 @@ using Grains.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Backend.Controllers;
 
 [Route("backend/[controller]")]
 [ApiController]
-public class UserController(ApplicationDbContext context, IClusterClient cluster, IConfiguration config, IHubContext<ChatHub> hubContext, IChannelRepository channelRepository) : ControllerBase
+public class UserController(ApplicationDbContext context, IClusterClient cluster, IConfiguration config) : ControllerBase
 {
     static string ErrorMessage = "The {0} is already registered to a existing account. Please pick another {0}.";
     private static string CreateErrormessage(string category) => string.Format(ErrorMessage, category);
     private readonly ApplicationDbContext _context = context;
     private readonly IClusterClient _cluster = cluster;
-    private readonly IHubContext<ChatHub> hubContext = hubContext;
-    private readonly IChannelRepository channelRepository = channelRepository;
 
     private IConfiguration Config { get; } = config;
     private Guid UserID => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var ID) ? ID : default;

@@ -1,9 +1,11 @@
 'use client'
+import { auth } from "@/auth";
 import ChatClient from "@/components/ui/chat/chat-client";
 import { AppContextProvider } from "@/providers/AppContext";
-import React from "react";
+import { SessionProvider } from "next-auth/react";
+import React, { Suspense } from "react";
 
-export default async function Page() {
+export default function Page() {
     return (
         <ChatClient />
     );

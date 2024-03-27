@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
-
 namespace Backend.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]

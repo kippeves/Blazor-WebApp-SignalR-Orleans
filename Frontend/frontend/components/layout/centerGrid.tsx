@@ -1,9 +1,10 @@
 import { Container } from "@mui/material";
 
-export default function CenterGrid(props: { children: React.ReactNode }) {
+export default function CenterGrid(props: { children: React.ReactNode, bgUrl?: string }) {
 
+    const bg = props.bgUrl === undefined ? "" : `url(${props.bgUrl})`
     return (
-        <Container sx={{ backgroundImage: "url(_next/image/wp.avif)" }} maxWidth={false}>
+        <Container sx={{ backgroundImage: bg }} maxWidth={false}>
             <Container
                 maxWidth={"xs"}
                 sx={{

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices.Marshalling;
+
 namespace Grains.Interfaces.Abstractions
 {
     [GenerateSerializer, Alias(nameof(AppSettings))]
@@ -5,6 +7,6 @@ namespace Grains.Interfaces.Abstractions
     {
         [Id(0)] public bool menuIsOpen { get; set; }
         [Id(1)] public Guid? activeChannel { get; set; }
-
+        [Id(2)] public HashSet<Guid> SubscribedChannels { get; set; } = [];
     }
 }

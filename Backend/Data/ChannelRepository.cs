@@ -1,8 +1,7 @@
-﻿using Backend.Data;
-using Grains.Interfaces;
+﻿using Grains.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services
+namespace Backend.Data
 {
     public class ChannelRepository : IChannelRepository
     {

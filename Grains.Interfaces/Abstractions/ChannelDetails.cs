@@ -1,11 +1,4 @@
-﻿using Orleans;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Grains.Interfaces.Abstractions
+﻿namespace Grains.Interfaces.Abstractions
 {
     [GenerateSerializer, Alias(nameof(ChannelDetails))]
     public sealed record class ChannelDetails

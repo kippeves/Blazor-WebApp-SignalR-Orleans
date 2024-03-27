@@ -1,37 +1,37 @@
-import { auth, signOut } from "@/auth";
-import { AppBar, Avatar, Box, Container, IconButton, Toolbar, Tooltip } from "@mui/material";
+'use server'
+import { AppBar, Box, Container, MenuItem, Toolbar, Typography } from "@mui/material";
 import Providers from "../providers";
 import ResponsiveAppBar from "@/components/ui/chat/sidebars/navbar";
-import { DoorBack } from "@mui/icons-material";
-import { SessionProvider } from "next-auth/react";
+
+import { createSignalRContext } from "react-signalr";
+import { SessionProvider, useSession } from "next-auth/react";
+import { AppContextProvider } from "@/providers/AppContext";
+import { LogOut } from "@/lib/actions";
+import { Context, Hub } from "react-signalr/lib/signalr/types";
+import { createSign } from "crypto";
+import { Suspense } from "react";
+import { Signal, signal } from "@preact/signals-react";
+import { auth } from "@/auth";
 
 
 export default async function Layout(props: { children: React.ReactNode }) {
-    const authState = await auth();
+    const session = await auth();
     return (
         <Providers>
-            <SessionProvider session={authState}>
-                <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%' }}>
-                    <AppBar position="fixed" sx={{ zIndex: 9999, color: 'info' }}>
-                        <Container maxWidth="xl" disableGutters>
-                            <Toolbar>
-                                <ResponsiveAppBar />
-                                <Box component={'form'} sx={{ flexGrow: 0 }} action={async () => {
-                                    'use server';
-                                    await signOut();
-                                }}>
-                                    <Tooltip title="Log Out">
-                                        <IconButton sx={{ p: 0 }} type="submit">
-                                            <Avatar sx={{ border: '2px solid white', bgcolor: 'primary.light' }} alt={""}>{<DoorBack />}</Avatar>
-                                        </IconButton>
-                                    </Tooltip>
-                                </Box>
-                            </Toolbar>
-                        </Container>
-                    </AppBar>
-                    {props.children}
-                </Box>
-            </SessionProvider>
+            <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%' }}>
+                <AppBar position="fixed" sx={{ zIndex: 9999, color: 'info' }}>
+                    <Container maxWidth="xl" disableGutters>
+                        <Toolbar>
+                            <ResponsiveAppBar />
+                        </Toolbar>
+                    </Container>
+                </AppBar>
+                <SessionProvider session={session}>
+                    <AppContextProvider Token={session.user.token}>
+                        {props.children}
+                    </AppContextProvider>
+                </SessionProvider>
+            </Box>
         </Providers >
     );
 }

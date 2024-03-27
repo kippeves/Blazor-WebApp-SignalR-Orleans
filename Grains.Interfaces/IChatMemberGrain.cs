@@ -16,5 +16,7 @@ namespace Grains.Interfaces
         ValueTask Leave(Guid id);
         ValueTask Join(Guid id);
         Task<IChannelGrain?> GetActiveChannelGrain();
+        Task<Guid[]> GetSubscribedChannels();
+        Task AddSubscribedChannel(Guid id);
     }
 }

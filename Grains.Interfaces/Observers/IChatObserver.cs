@@ -2,7 +2,7 @@
 {
     public interface IChatObserver : IGrainObserver
     {
-        void ReceiveMessage(string message);
+        void ReceiveMessage(MessageRequest req);
 
         Task Subscribe();
 

@@ -1,4 +1,3 @@
-using System.Threading.Tasks.Dataflow;
 using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
 using Orleans.Runtime;
@@ -30,6 +29,20 @@ public sealed class ChatMemberGrain : Grain, IChatMemberGrain
     {
         _settings.State.menuIsOpen = state;
         await _settings.WriteStateAsync();
+    }
+
+    public async Task AddSubscribedChannel(Guid id)
+    {
+        _settings.State.SubscribedChannels.Add(id);
+        await _settings.WriteStateAsync();
+    }
+
+    public Task<Guid[]> GetSubscribedChannels()
+    {
+        var initList = _settings.State.SubscribedChannels;
+        var active = _settings.State.activeChannel;
+        if (active.HasValue) initList.Add(active.Value);
+        return Task.FromResult(initList.ToArray());
     }
 
     public Task<AppSettings> GetSettings() => Task.FromResult(_settings.State);

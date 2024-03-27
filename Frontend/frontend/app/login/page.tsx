@@ -7,7 +7,7 @@ import CenterGrid from "@/components/layout/centerGrid";
 
 export default function Page() {
     return (
-        <CenterGrid>
+        <CenterGrid bgUrl="_next/image/wp.avif">
             <LoginAndRegister />
         </CenterGrid>
 

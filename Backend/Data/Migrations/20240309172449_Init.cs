@@ -1,11 +1,9 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Backend.Data.Migrations
-{
-    /// <inheritdoc />
+{    /// <inheritdoc />
     public partial class Init : Migration
     {
         /// <inheritdoc />

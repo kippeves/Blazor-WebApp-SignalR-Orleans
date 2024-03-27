@@ -12,8 +12,7 @@ namespace Grains
 
         public MessageRelayGrain(ILogger<MessageRelayGrain> logger)
         {
-            _subsManager =
-                new ObserverManager<IChatObserver>(TimeSpan.FromMinutes(5), logger);
+            _subsManager = new ObserverManager<IChatObserver>(TimeSpan.FromMinutes(5), logger);
         }
 
         // Clients call this to subscribe.
@@ -32,9 +31,10 @@ namespace Grains
             return Task.CompletedTask;
         }
 
-        public Task SendMessage(string user, string message)
+        public Task SendMessage(MessageRequest req)
         {
-            _subsManager.Notify(s => s.ReceiveMessage($"MessageRelayGrain ({GrainReference.GrainId.GetGuidKey()}): <{user}>: {message}"));
+
+            _subsManager.Notify(s => s.ReceiveMessage(req));
 
             return Task.CompletedTask;
         }

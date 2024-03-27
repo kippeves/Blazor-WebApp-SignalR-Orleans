@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Blazor_WebApp_SignalR_Orleans</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

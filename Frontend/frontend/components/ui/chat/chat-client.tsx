@@ -1,34 +1,44 @@
 'use client'
 import { Container } from "@mui/material";
-import { Suspense } from "react";
-import { AppContextProvider } from "@/providers/AppContext";
-import { createSignalRContext } from "react-signalr";
+import { Suspense, useContext, useEffect, useState } from "react";
+import { AppContext } from "@/providers/AppContext";
 import ChannelSideBar from "./sidebars/channel-sidebar";
-import { useSession } from "next-auth/react";
 import MessageArea from "./messages/message-area";
 import { useSignals } from "@preact/signals-react/runtime";
+import { Connector } from "@/providers/Connectors/signal-r";
+import { UUID } from "node:crypto";
+import { effect } from "@preact/signals-react";
+import MessageList from "./messages/message-list";
+import MessageListPlaceholder from "./messages/message-placeholder";
 
-const SERVER_URL = "https://192.168.2.124:7084";
 export default function ChatClient() {
-    const session = useSession();
-    const Token = session.data.user.token;
-    const Hub = createSignalRContext();
+    const app = useContext(AppContext)
+
     useSignals()
 
-    return (<Hub.Provider
-        connectEnabled={!!Token}
-        automaticReconnect
-        accessTokenFactory={() => Token}
-        dependencies={[Token]}
-        url={`${SERVER_URL}/hubs/chathub`}>
-        <AppContextProvider Hub={Hub}>
-            <Suspense>
-                <ChannelSideBar />
-            </Suspense>
+    if (app.SignalR.value === undefined)
+        app.SignalR.value = new Connector(app.Token)
+
+    useEffect(() => {
+        if (app.CurrentChannel.value === undefined) return;
+        var sessionValue = sessionStorage.getItem('lastChannel')
+        if (sessionValue === app.CurrentChannel.value) return;
+        sessionStorage.setItem('lastChannel', app.CurrentChannel.value)
+    }, [app.CurrentChannel.value])
+
+    useEffect(() => {
+        var channel = sessionStorage.getItem('lastChannel') as UUID
+        if (channel !== null) {
+            app.CurrentChannel.value = channel;
+        }
+    }, [])
+
+    return (
+        <>
+            <ChannelSideBar />
             <Container maxWidth={false}>
                 <MessageArea />
             </Container>
-        </AppContextProvider>
-    </Hub.Provider >
+        </>
     );
 }

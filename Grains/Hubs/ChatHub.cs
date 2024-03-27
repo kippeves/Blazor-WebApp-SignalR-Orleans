@@ -1,39 +1,38 @@
-﻿using Shared.Models;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Grains.Interfaces;
-using System.Text.RegularExpressions;
-using System.Globalization;
-using static Grains.ChannelGrain;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Grains.Interfaces.Abstractions;
-using System.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using System.Data;
+using Microsoft.Extensions.Logging;
 
 namespace Grains.Hubs;
 [Authorize]
-public class ChatHub(IClusterClient clusterClient) : Hub
+public class ChatHub(IClusterClient clusterClient, ILogger<ChatHub> logger) : Hub
 {
-    private readonly IClusterClient clusterClient = clusterClient;
+    public static readonly Guid InstanceGuid = Guid.NewGuid();
+    private readonly IClusterClient _cluster = clusterClient;
+    private readonly ILogger<ChatHub> _logger = logger;
 
-    IChatMemberGrain GetUser(Guid id) => clusterClient.GetGrain<IChatMemberGrain>(id);
+    IChatMemberGrain GetUser(Guid id) => _cluster.GetGrain<IChatMemberGrain>(id);
+    IChannelGrain GetChannel(Guid id) => _cluster.GetGrain<IChannelGrain>(id);
 
-    [HubMethodName("SendMessage")]
-    public async Task SendMessage(string message)
+    [HubMethodName("Message")]
+    public async Task Message(SendMessageRequest request)
     {
-        var id = Guid.Parse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier));
-        var user = GetUser(id);
-        var channel = await user.GetActiveChannelGrain();
-        if (channel is null) return;
-        await channel.Message(new ChatMsg(id, "name", message, DateTime.Now));
+        if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
+        var messageRelayGrain = _cluster.GetGrain<IMessageRelayGrain>(InstanceGuid);
+        await messageRelayGrain.SendMessage(new(request.id, new(id, request.message)));
+
+        /*        if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
+                var channel = GetChannel(request.ChannelId);
+                await channel.Message(new ChatMsg(request.ChannelId, request.Message));*/
     }
 
     [HubMethodName("SwitchChannel")]
     public async Task SwitchChannel(Guid newChannel)
     {
         if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
+
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, id.ToString("N"));
         await GetUser(id).Switch(newChannel);
         await Groups.AddToGroupAsync(Context.ConnectionId, newChannel.ToString("N"));
@@ -41,38 +40,36 @@ public class ChatHub(IClusterClient clusterClient) : Hub
     }
 
 
+    public override async Task OnConnectedAsync()
+    {
+        if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
+        var userGrain = GetUser(id);
+        var channels = await userGrain.GetSubscribedChannels();
+        channels.ToList().ForEach(async c => await Groups.AddToGroupAsync(Context.ConnectionId, c.ToString("N")));
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
+        if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
+        _logger.LogInformation("{id} disconnected", id);
+
         await Task.CompletedTask;
-        /*        if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
-                var User = GetUser(id);
-                var activeChannel = await User.GetActiveChannel();
-                if (activeChannel is null) return;
-                try
-                {
-                    User.Leave(activeChannel);
-                    await LeaveChannel(activeChannel.GetPrimaryKey());
-                }
-                catch (Exception e) { Debug.WriteLine(e.Message); }
-                await base.OnDisconnectedAsync(exception);*/
     }
 
-    public async Task JoinChannel(Guid id)
+    public async Task JoinChannel(Guid channel)
     {
         if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return;
-        await GetUser(userId).Join(id);
-        Console.WriteLine(id.ToString("N"));
-        await Groups.AddToGroupAsync(Context.ConnectionId, id.ToString("N"));
+        await GetUser(userId).Join(channel);
+        await Groups.AddToGroupAsync(Context.ConnectionId, channel.ToString("N"));
     }
 
-    public async Task LeaveChannel(Guid id)
+    public async Task LeaveChannel(Guid channel)
     {
         if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return;
-        await GetUser(userId).Leave(id);
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, id.ToString("N"));
+        await GetUser(userId).Leave(channel);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, channel.ToString("N"));
 
     }
 
-    public record JoinChannelDTO(Guid channelId);
-
+    public record SendMessageRequest(Guid id, string message);
 }

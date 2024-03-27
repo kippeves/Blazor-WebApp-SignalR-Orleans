@@ -11,6 +11,7 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import { AccountCircle } from '@mui/icons-material';
 import { useRouter } from 'next/navigation'
+import { LogOut } from '@/lib/actions';
 
 type Setting = {
     name: string,
@@ -49,8 +50,13 @@ function ResponsiveAppBar() {
         handleCloseUserMenu();
     }
 
+    const LogOutFromChat = async () => {
+        LogOut();
+        handleCloseUserMenu()
+    }
 
-    const settings = [{ name: "Profile", action: GoToProfile }, { name: 'Account', action: handleCloseUserMenu }, { name: 'Dashboard', action: handleCloseUserMenu }, { name: 'Log Out', action: null }] as Setting[];
+
+    const settings = [{ name: "Profile", action: GoToProfile }, { name: 'Account', action: handleCloseUserMenu }, { name: 'Dashboard', action: handleCloseUserMenu }, { name: 'Log Out', action: LogOutFromChat }] as Setting[];
 
 
     /*    Hub.useSignalREffect("JoinChannel", // Your Event Key

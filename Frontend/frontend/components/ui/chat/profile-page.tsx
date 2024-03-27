@@ -1,10 +1,10 @@
 "use client"
 
-import { Button, Input } from "@mui/material"
+import { Box, Button, Input } from "@mui/material"
 import { useSession } from "next-auth/react"
 import { useState } from "react"
 
-const UpdateForm = () => {
+export const UpdateForm = () => {
     const { data: session, update } = useSession()
     const [name, setName] = useState(`${session?.user?.name}` ?? "")
 
@@ -16,11 +16,12 @@ const UpdateForm = () => {
             const newSession = await update({
                 user: { name }
             })
+            setName(newSession.user.name)
         }
     }
 
     return (
-        <>
+        <Box display={"flex"} flexDirection={"column"}>
             <h2 className="text-xl font-bold">Updating the session</h2>
             <form
                 onSubmit={Update}
@@ -36,16 +37,6 @@ const UpdateForm = () => {
                 />
                 <Button type="submit">Update</Button>
             </form>
-        </>
-    )
-}
-
-export default function ClientExample() {
-    const { data: session, status } = useSession()
-
-    return (
-        <div className="flex flex-col gap-4">
-            <UpdateForm />
-        </div>
+        </Box>
     )
 }

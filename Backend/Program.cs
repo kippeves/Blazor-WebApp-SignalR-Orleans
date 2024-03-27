@@ -9,8 +9,8 @@ using Backend.Services;
 using Microsoft.Azure.Cosmos;
 using System.Net;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Newtonsoft.Json;
-using System.Text.Json;
+using Grains.Interfaces.Observers;
+using BlazorSignalrOrleans.Server.Observers;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -78,6 +78,9 @@ builder.Services.AddAuthentication(options =>
             }
         };
     });
+
+builder.Services.AddSingleton<IChatObserver, ChatObserver>();
+builder.Services.AddHostedService<ChatObserverHostedService>();
 builder.Services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
 builder.Services.AddScoped<ApiKeyAuthFilter>();
 builder.Services.AddAuthorization();
@@ -103,10 +106,8 @@ builder.Host.UseOrleans(static siloBuilder =>
             options.ContainerThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
             options.ConfigureCosmosClient(cosmosConnection);
         });
-
     siloBuilder.UseSignalR(); // Adds ability #1 and #2 to Orleans.
     siloBuilder.RegisterHub<ChatHub>(); // Required for each hub type if the backplane ability #1 is being used.
-
 });
 
 builder.Services.AddSignalR().AddOrleans(); // Tells the SignalR hubs in the web application to use Orleans as a backplane (ability #1)
@@ -119,6 +120,7 @@ builder.Services.AddResponseCompression(opts =>
 });
 
 builder.Services.AddControllers();
+
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())

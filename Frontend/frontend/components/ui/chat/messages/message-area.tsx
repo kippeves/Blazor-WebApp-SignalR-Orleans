@@ -1,17 +1,16 @@
 'use client'
-import { useContext } from "react";
-import { MessageObj } from "@/lib/definitions";
+import { Suspense, useContext } from "react";
 import { AppContext } from "@/providers/AppContext";
 import MessageList from "./message-list";
-import { Box } from "@mui/material";
-import { brown } from "@mui/material/colors";
 import MessageListPlaceholder from "./message-placeholder";
+import { useSignals } from "@preact/signals-react/runtime";
+import { UUID } from "node:crypto";
 
 export default function MessageArea() {
     const app = useContext(AppContext)
-    const currentChannelSignal = app.CurrentChannel
-    const currentChannel = currentChannelSignal.value
     return (
-        currentChannel === undefined ? <MessageListPlaceholder /> : <MessageList />
+        <Suspense>
+            {app.CurrentChannel.value !== undefined ? <MessageList /> : <MessageListPlaceholder />}
+        </Suspense>
     )
 }
