@@ -1,10 +1,6 @@
 using System.Security.Claims;
-using Grains.Interfaces;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
-
 [Authorize]
 [ApiController]
 [Route("backend/[controller]")]

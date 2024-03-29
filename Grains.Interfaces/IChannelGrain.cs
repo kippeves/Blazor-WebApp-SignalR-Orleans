@@ -1,5 +1,4 @@
 using Grains.Interfaces.Abstractions;
-using Grains.Interfaces.Observers;
 
 namespace Grains.Interfaces
 {
@@ -8,7 +7,7 @@ namespace Grains.Interfaces
         Task Join(IChatMemberGrain member);
         Task Leave(IChatMemberGrain member);
         Task Message(ChatMsg msg);
-        Task<ChatMsg[]> ReadHistory(int numberOfMessages);
+        Task<ChatMsg[]> ReadHistory(Guid? fromId);
         ValueTask<MemberDetails[]> GetMembers();
         Task SetName(string name);
         Task<string> GetName();

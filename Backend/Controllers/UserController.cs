@@ -1,12 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Shared.Extensions;
-using Grains.Interfaces;
-using Grains.Hubs;
-using Microsoft.AspNetCore.SignalR;
-using Backend.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Controllers;
 
@@ -75,20 +67,6 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         var user = _cluster.GetGrain<IChatMemberGrain>(UserID);
         var settings = await user.GetSettings();
         return Ok(settings);
-    }
-
-    [Authorize]
-    [HttpGet("Prefetch/Messages")]
-    public async Task<IActionResult> PrefetchMessages()
-    {
-        if (UserID == default)
-            return BadRequest();
-
-        var user = _cluster.GetGrain<IChatMemberGrain>(UserID);
-        var Channel = await user.GetActiveChannelGrain();
-        if (Channel is null) return NoContent();
-        var messages = await Channel.ReadHistory(50);
-        return Ok(messages);
     }
 
     [ApiKey]

@@ -1,14 +1,13 @@
 ﻿namespace Grains.Interfaces.Abstractions;
 
 [GenerateSerializer]
-public record class ChatMsg(
-    Guid UserId,
-    string Message)
+[Alias("ChatMsg")]
+public record class ChatMsg(string Name, string Message)
 {
     [Id(0)]
     public Guid Id { get; set; } = Guid.NewGuid();
     [Id(1)]
-    public Guid UserId { get; init; } = UserId;
+    public string Name { get; init; } = Name;
 
     [Id(2)]
     public string Message { get; set; } = Message;

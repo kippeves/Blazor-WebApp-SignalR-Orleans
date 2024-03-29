@@ -9,7 +9,6 @@ namespace Grains.Hubs;
 [Authorize]
 public class ChatHub(IClusterClient clusterClient, ILogger<ChatHub> logger) : Hub
 {
-    public static readonly Guid InstanceGuid = Guid.NewGuid();
     private readonly IClusterClient _cluster = clusterClient;
     private readonly ILogger<ChatHub> _logger = logger;
 
@@ -19,13 +18,8 @@ public class ChatHub(IClusterClient clusterClient, ILogger<ChatHub> logger) : Hu
     [HubMethodName("Message")]
     public async Task Message(SendMessageRequest request)
     {
-        if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
-        var messageRelayGrain = _cluster.GetGrain<IMessageRelayGrain>(InstanceGuid);
-        await messageRelayGrain.SendMessage(new(request.id, new(id, request.message)));
-
-        /*        if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
-                var channel = GetChannel(request.ChannelId);
-                await channel.Message(new ChatMsg(request.ChannelId, request.Message));*/
+        if (request.id == default || !Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return;
+        await GetChannel(request.id).Message(new ChatMsg(userId.ToString(), request.message));
     }
 
     [HubMethodName("SwitchChannel")]
@@ -39,21 +33,18 @@ public class ChatHub(IClusterClient clusterClient, ILogger<ChatHub> logger) : Hu
         await Clients.Client(Context.ConnectionId).SendAsync("JoinedChannel", ChannelState.Joined);
     }
 
-
     public override async Task OnConnectedAsync()
     {
         if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
-        var userGrain = GetUser(id);
-        var channels = await userGrain.GetSubscribedChannels();
-        channels.ToList().ForEach(async c => await Groups.AddToGroupAsync(Context.ConnectionId, c.ToString("N")));
+        var channels = await GetUser(id).GetSubscribedChannels();
+        Parallel.ForEach(channels, async c => await Groups.AddToGroupAsync(Context.ConnectionId, c.ToString("N")));
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         if (!Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var id)) return;
-        _logger.LogInformation("{id} disconnected", id);
-
-        await Task.CompletedTask;
+        var channels = await GetUser(id).GetSubscribedChannels();
+        Parallel.ForEach(channels, async c => await Groups.RemoveFromGroupAsync(Context.ConnectionId, c.ToString("N")));
     }
 
     public async Task JoinChannel(Guid channel)

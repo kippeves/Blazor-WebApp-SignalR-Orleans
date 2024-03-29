@@ -1,9 +1,3 @@
-using Grains.Interfaces;
-using Grains.Interfaces.Abstractions;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-
-
 [ApiController]
 [Route("backend/[controller]/[action]")]
 public class ChannelController(IChannelRepository channelRepository, IClusterClient cluster, ILogger<ChannelController> logger) : ControllerBase
@@ -41,10 +35,9 @@ public class ChannelController(IChannelRepository channelRepository, IClusterCli
     [Authorize]
     public async IAsyncEnumerable<ChatMsg> GetMessages([FromBody] FetchMessagesDTO dto)
     {
-        if (!Guid.TryParse(dto.id, out var id)) yield break;
-        var channel = cluster.GetGrain<IChannelGrain>(id);
-        var messages = await channel.ReadHistory(dto.amount);
-        foreach (var message in messages)
+        var channel = cluster.GetGrain<IChannelGrain>(dto.channelId);
+        var messages = await channel.ReadHistory(dto.postId);
+        foreach (var message in messages.OrderBy(m => m.Created))
         {
             yield return message;
         }
@@ -59,6 +52,6 @@ public class ChannelController(IChannelRepository channelRepository, IClusterCli
     public async Task<IActionResult> Add([FromBody] AddChannelDTO dto) => await channelRepository.AddChannelAsync(dto.Name, dto.Description, dto.Category) ? Ok() : BadRequest();
 };
 
-public record FetchMessagesDTO(string id, int amount);
+public record FetchMessagesDTO(Guid channelId, Guid? postId);
 public record AddChannelDTO(string Name, string? Description, string? Category);
 public record NameChangeDTO(Guid id, string newName);

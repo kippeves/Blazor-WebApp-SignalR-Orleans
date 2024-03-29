@@ -1,18 +1,3 @@
-using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.EntityFrameworkCore;
-using Backend.Data;
-using Grains.Hubs;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Backend.Services;
-using Microsoft.Azure.Cosmos;
-using System.Net;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Grains.Interfaces.Observers;
-using BlazorSignalrOrleans.Server.Observers;
-
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source = AppDb.db"));
@@ -79,8 +64,6 @@ builder.Services.AddAuthentication(options =>
         };
     });
 
-builder.Services.AddSingleton<IChatObserver, ChatObserver>();
-builder.Services.AddHostedService<ChatObserverHostedService>();
 builder.Services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
 builder.Services.AddScoped<ApiKeyAuthFilter>();
 builder.Services.AddAuthorization();

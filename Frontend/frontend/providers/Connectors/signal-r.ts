@@ -1,3 +1,4 @@
+import { MessageObj } from "@/lib/definitions";
 import * as signalR from "@microsoft/signalr";
 import { UUID } from "node:crypto";
 import { useEffect } from "react";
@@ -5,28 +6,21 @@ const URL = process.env.HUB_ADDRESS ?? "https://192.168.2.124:7084/hubs/chathub"
 export class Connector {
     private connection: signalR.HubConnection;
     public state: signalR.HubConnectionState;
-    public events: (onMessageReceived: (message: string) => void) => void;
+    public events: (onMessageReceived: (msg: MessageObj) => void) => void;
     static instance: Connector;
+
     constructor(token: string) {
         this.connection = new signalR.HubConnectionBuilder()
             .withUrl(URL, { accessTokenFactory: () => token })
-            .withStatefulReconnect()
-            .withAutomaticReconnect()
             .build();
         this.connection.start().catch(err => document.write(err));
-        /*        this.events = (onMessageReceived) => {
-                    this.connection.on("ReceiveMessage", (message) => {
-                        console.debug("test")
-                        //onMessageReceived(username, message);
-                    });
-                };*/
-        this.connection.on("ReceiveMessage", (message) => {
-            //onMessageReceived(username, message);
-            console.table(message)
-        });
+        this.events = (onMessageReceived) =>
+            this.connection.on("ReceiveMessage", (message: MessageObj) => {
+                onMessageReceived(message);
+            });
+
         this.state = this.connection.state
     }
-
 
 
     public newMessage = (message: MessageRequest) => {
@@ -43,19 +37,24 @@ export class Connector {
 }
 export default Connector.getInstance;
 
-type MessageRequest = {
+export type MessageRequest = {
     id: UUID,
     message: string
 }
 
-type MessageResponse = {
+export type MessageResponse = {
     channel: string,
     message: ChatMsg
 }
 
-type ChatMsg = {
+export type ChatUser = {
     id: UUID,
-    userId: UUID,
+    name: string
+}
+
+export type ChatMsg = {
+    id: UUID,
+    user: ChatUser,
     message: string,
     created: string
 }

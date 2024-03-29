@@ -1,48 +1,43 @@
 'use client'
-import useFetch from "@/lib/apiClient";
-import { AppContext } from "@/providers/AppContext";
+import getFetch from "@/lib/apiClient";
 import { List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import { UUID } from "node:crypto";
-import { Suspense, useContext, useEffect } from "react";
+import { useEffect } from "react";
 import ChannelIcon from "../icons/channel-icon";
 import { useQuery } from "@tanstack/react-query";
 import { ChannelObj } from "@/lib/definitions";
-import { useSignals } from "@preact/signals-react/runtime";
-import { effect } from "@preact/signals-react";
+import { useAppSignal } from "@/lib/hooks/useChat";
+import { useStorageForChannels } from "@/lib/hooks/useStorageForChannels";
+import { useSignalR } from "@/lib/hooks/useSignalR";
+
 
 
 export default function ChannelList() {
-    const app = useContext(AppContext)
-    const Channels = app.Channels
-    const SignalR = app.SignalR
-    useSignals()
-
-    const { data: ApiChannels } = useQuery<ChannelObj[]>({ queryKey: ["channels"], queryFn: () => useFetch('/channel/GetChannels', "GET", {}, app.Token) })
-
+    const { Channel, Token } = useAppSignal();
+    const { Channels, updateList } = useStorageForChannels()
+    const { data: API, status } = useQuery<ChannelObj[]>({ queryKey: ["channels"], queryFn: () => getFetch('/channel/GetChannels', "GET", {}, Token) })
+    const { joinChannel } = useSignalR();
     useEffect(() => {
-        Channels.value = ApiChannels ?? Channels.value
-    }, [ApiChannels])
+        if (status === 'success')
+            updateList(API)
+    }, [API, status, updateList])
 
-    const setActiveChannel = (id: UUID) => {
-        if (app.CurrentChannel.value !== id) {
-            app.CurrentChannel.value = id;
-            SignalR.value.joinChannel(id)
-        }
+    const JoinChannel = (id: UUID) => {
+        Channel.value = id;
+        joinChannel(id)
     }
 
     return (
-        <Suspense>
-            <List>
-                {
-                    Channels.value && Channels.value.map((channel, index) => (
-                        <ListItem key={index} disablePadding sx={{ display: 'block' }}>
-                            <ListItemButton disableGutters onClick={() => setActiveChannel(channel.id)}>
-                                <ChannelIcon currentChannel={app.CurrentChannel.value === channel.id} alt={`Channel ${index + 1}`} text={`${index + 1}`} />
-                                <ListItemText primary={channel.name} sx={{ marginLeft: 2 }} />
-                            </ListItemButton>
-                        </ListItem>))
-                }
-            </List>
-        </Suspense>
+        <List>
+            {
+                Channels && Channels.map((channel, index) => (
+                    <ListItem key={index} disablePadding sx={{ display: 'block' }}>
+                        <ListItemButton disableGutters onClick={() => JoinChannel(channel.id)}>
+                            <ChannelIcon currentChannel={Channel.value === channel.id} alt={`Channel ${index + 1}`} text={`${index + 1}`} />
+                            <ListItemText primary={channel.name} sx={{ marginLeft: 2 }} />
+                        </ListItemButton>
+                    </ListItem>))
+            }
+        </List>
     )
 }

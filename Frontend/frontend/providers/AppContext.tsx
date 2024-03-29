@@ -1,5 +1,5 @@
 'use client'
-import useFetch from "@/lib/apiClient";
+import getFetch from "@/lib/apiClient";
 import { ChannelObj, ClientState, MemberObj, MessageObj, User } from "@/lib/definitions";
 import { Signal, computed, effect, signal } from "@preact/signals-react";
 import { useQuery } from "@tanstack/react-query";
@@ -25,7 +25,6 @@ export type AppContextType = {
     Token: string,
     SignalR: Signal<Connector>,
     Channels: Signal<ChannelObj[]>
-    Messages: Signal<MessageObj[]>
     CurrentChannel: Signal<UUID>
     ChannelStatus: Signal<ClientState>
     SidebarOpen: Signal<boolean>
@@ -34,8 +33,12 @@ export type AppContextType = {
 
 const AppContext = React.createContext<AppContextType | null>(null);
 const AppContextProvider: React.FC<{ children: React.ReactNode, Token: string }> = (props: { children: React.ReactNode, Token: string }) => {
+    if (SignalR.value === undefined)
+        SignalR.value = new Connector(props.Token)
+
+
     return (
-        <AppContext.Provider value={{ Token: props.Token, SignalR, Channels, ChannelStatus: ConnectionStatus, CurrentChannel, Messages, SidebarOpen }}>
+        <AppContext.Provider value={{ Token: props.Token, SignalR, Channels, ChannelStatus: ConnectionStatus, CurrentChannel, SidebarOpen }}>
             {props.children}
         </AppContext.Provider>
     );

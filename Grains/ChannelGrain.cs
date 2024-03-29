@@ -1,6 +1,8 @@
 using Grains.Hubs;
 using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Orleans.Concurrency;
 using Orleans.Runtime;
@@ -12,16 +14,19 @@ public class ChannelGrain : Grain, IChannelGrain
 {
     private string GrainId => this.GetPrimaryKeyString();
     private readonly HubContext<ChatHub> _hubContext;
+    private readonly IHubContext<ChatHub> _hub;
     private readonly IPersistentState<ChannelDetails> _state;
     private readonly ILogger<IChannelGrain> _logger;
 
     public ChannelGrain(
         [PersistentState(stateName: "Channel")] IPersistentState<ChannelDetails> state,
-        ILogger<IChannelGrain> logger
+        ILogger<IChannelGrain> logger,
+        IHubContext<ChatHub> hub
         )
     {
         _state = state;
         _logger = logger;
+        _hub = hub;
         _hubContext = GrainFactory.GetHub<ChatHub>();
     }
 
@@ -59,7 +64,8 @@ public class ChannelGrain : Grain, IChannelGrain
     {
         _state.State._messages.Add(msg);
         await _state.WriteStateAsync();
-        await _hubContext.Group(GrainId).Send(new("ReceiveMessage", [msg]));
+        await _hub.Clients.All.SendAsync("ReceiveMessage", msg);
+        _logger.LogCritical("Messaging now");
     }
 
     public async ValueTask<MemberDetails[]> GetMembers()
@@ -67,13 +73,16 @@ public class ChannelGrain : Grain, IChannelGrain
         return await Task.WhenAll(Members.Select(m => m.GetDetails()));
     }
 
-    public Task<ChatMsg[]> ReadHistory(int numberOfMessages)
+    public Task<ChatMsg[]> ReadHistory(Guid? fromId)
     {
-        var response = _state.State._messages
-            .OrderByDescending(x => x.Created)
-            .Take(numberOfMessages).ToArray();
-
-        return Task.FromResult(response);
+        var result = _state.State._messages.OrderByDescending(m => m.Created).ToList();
+        if (fromId != null)
+        {
+            var list = _state.State._messages;
+            var index = list.IndexOf(list.Single(m => m.Id.Equals(fromId)));
+            result = result.Skip(index).ToList();
+        }
+        return Task.FromResult(result.Take(50).ToArray());
     }
 
 

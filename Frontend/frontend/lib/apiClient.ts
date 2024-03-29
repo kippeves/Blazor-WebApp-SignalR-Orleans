@@ -47,7 +47,7 @@ const API_URL = "https://192.168.2.124:7084/backend";
     }
 }*/
 
-async function useFetch<T>(url: string, method?: "GET" | "POST", params?: Record<string, string>, token?: string, apiKey?: string): Promise<T> {
+async function getFetch<T>(url: string, method?: "GET" | "POST", params?: Record<string, string>, token?: string, apiKey?: string): Promise<T> {
     try {
         const queryString = (params !== undefined && method === "GET") ? "?" + new URLSearchParams(params) : ""
         const req = {
@@ -80,4 +80,4 @@ async function useFetch<T>(url: string, method?: "GET" | "POST", params?: Record
     }
 }
 
-export default useFetch;
+export default getFetch;
