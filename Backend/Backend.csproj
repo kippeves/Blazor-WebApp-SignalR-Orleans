@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Orleans.Persistence.Cosmos" Version="8.0.0" />
     <PackageReference Include="Microsoft.Orleans.Server" Version="8.0.0" />
     <PackageReference Include="Microsoft.Orleans.Streaming" Version="8.0.0" />
+    <PackageReference Include="Orleans.Providers.MongoDB" Version="8.0.3" />
     <PackageReference Include="SignalR.Orleans" Version="7.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.3" />

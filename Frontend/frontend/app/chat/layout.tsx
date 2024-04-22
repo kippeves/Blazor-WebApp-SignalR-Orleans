@@ -1,37 +1,22 @@
 'use server'
-import { AppBar, Box, Container, MenuItem, Toolbar, Typography } from "@mui/material";
-import Providers from "../providers";
-import ResponsiveAppBar from "@/components/ui/chat/sidebars/navbar";
+import { AppBar, Box, Container, Toolbar } from "@mui/material";
+import ResponsiveAppBar, { AuthToolbar } from "@/components/ui/chat/sidebars/navbar";
 
-import { createSignalRContext } from "react-signalr";
-import { SessionProvider, useSession } from "next-auth/react";
-import { AppContextProvider } from "@/providers/AppContext";
-import { LogOut } from "@/lib/actions";
-import { Context, Hub } from "react-signalr/lib/signalr/types";
-import { createSign } from "crypto";
-import { Suspense } from "react";
-import { Signal, signal } from "@preact/signals-react";
 import { auth } from "@/auth";
-
+import { SessionProvider } from "next-auth/react";
 
 export default async function Layout(props: { children: React.ReactNode }) {
     const session = await auth();
     return (
-        <Providers>
+        <SessionProvider session={session}>
             <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%' }}>
                 <AppBar position="fixed" sx={{ zIndex: 9999, color: 'info' }}>
                     <Container maxWidth="xl" disableGutters>
-                        <Toolbar>
-                            <ResponsiveAppBar />
-                        </Toolbar>
+                        <AuthToolbar token={session.user.token} />
                     </Container>
                 </AppBar>
-                <SessionProvider session={session}>
-                    <AppContextProvider Token={session.user.token}>
-                        {props.children}
-                    </AppContextProvider>
-                </SessionProvider>
+                {props.children}
             </Box>
-        </Providers >
+        </SessionProvider>
     );
 }

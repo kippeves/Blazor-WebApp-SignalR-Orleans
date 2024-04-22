@@ -2,7 +2,7 @@
 import { auth, signIn, signOut } from '../auth';
 import { AuthError } from 'next-auth';
 import { ControlResponse } from './definitions';
-import getFetch from './apiClient';
+import getFetch from './fetcher';
 export async function authenticate(
     formData: { email: string, password: string },
 ) {

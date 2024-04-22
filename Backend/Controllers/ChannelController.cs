@@ -31,12 +31,12 @@ public class ChannelController(IChannelRepository channelRepository, IClusterCli
         }
     }
 
-    [HttpPost]
+    [HttpGet]
     [Authorize]
-    public async IAsyncEnumerable<ChatMsg> GetMessages([FromBody] FetchMessagesDTO dto)
+    public async IAsyncEnumerable<ChatMsg> GetMessages(Guid id, Guid? post)
     {
-        var channel = cluster.GetGrain<IChannelGrain>(dto.channelId);
-        var messages = await channel.ReadHistory(dto.postId);
+        var channel = cluster.GetGrain<IChannelGrain>(id);
+        var messages = await channel.ReadHistory(post);
         foreach (var message in messages.OrderBy(m => m.Created))
         {
             yield return message;

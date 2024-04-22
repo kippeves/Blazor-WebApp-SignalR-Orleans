@@ -12,6 +12,10 @@ import MenuItem from '@mui/material/MenuItem';
 import { AccountCircle } from '@mui/icons-material';
 import { useRouter } from 'next/navigation'
 import { LogOut } from '@/lib/actions';
+import { useSignalR } from '@/lib/hooks/useSignalR';
+import { useAppSignal } from '@/lib/hooks/useChat';
+import { AppContextProvider } from '@/providers/AppContext';
+import { Toolbar } from '@mui/material';
 
 type Setting = {
     name: string,
@@ -20,8 +24,19 @@ type Setting = {
 
 const pages = ['Chat'];
 
+export function AuthToolbar(props: { token: string }) {
+    return (
+        <AppContextProvider token={props.token}>
+            <Toolbar>
+                <ResponsiveAppBar />
+            </Toolbar>
+        </AppContextProvider>
+    )
+}
+
 function ResponsiveAppBar() {
     const router = useRouter();
+    const { IsConnected, HubState } = useAppSignal()
     const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
     const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
@@ -63,7 +78,7 @@ function ResponsiveAppBar() {
             (event: JoinChannelEvent) => console.debug(event)
             , [])
     */
-
+    console.debug(JSON.stringify(IsConnected))
 
     return (
         <>
@@ -80,7 +95,7 @@ function ResponsiveAppBar() {
                     textDecoration: 'none',
                     cursor: "pointer"
                 }}>
-                Chat
+                {HubState.value}
             </Typography >
             <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
                 <IconButton
@@ -132,7 +147,7 @@ function ResponsiveAppBar() {
                     textDecoration: 'none',
                 }}
             >
-                Placehol
+                {HubState.value}
             </Typography>
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
                 {pages.map((page) => (

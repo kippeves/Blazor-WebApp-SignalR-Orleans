@@ -2,12 +2,13 @@
 import { MessageObj } from "@/lib/definitions";
 import { useAppSignal } from "@/lib/hooks/useChat";
 import { useLoadMessagesForCurrentChannel } from "@/lib/hooks/useLoadMessagesForCurrentChannel";
-import { useSignalR, useSignalREvents } from "@/lib/hooks/useSignalR";
+import { useSignalREvents } from "@/lib/hooks/useSignalR";
 import { Box, Chip, Grid, Toolbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import TextArea from "./textarea";
-
+import { MoonLoader } from "react-spinners";
+import CenterGrid from "@/components/layout/centerGrid";
 const scrollToBottom = () => {
     const element = document.getElementById("bottom");
     if (element) element.scrollTop = element.scrollHeight;
@@ -15,12 +16,14 @@ const scrollToBottom = () => {
 }
 
 export default function Messages() {
-    const { Messages } = useLoadMessagesForCurrentChannel();
-    const { Channel } = useAppSignal();
-    const { newMessage } = useSignalR();
-    useSignalREvents();
+    const { Messages, isLoading } = useLoadMessagesForCurrentChannel();
+    const { CurrentChannel, ConnectorSignal: Connector } = useAppSignal();
+    useEffect(() => { console.debug("Messages") }, [])
+    useSignalREvents()
+
     const SendMessage = (message: string) => {
-        newMessage({ id: Channel.value, message: message });
+        console.debug("SendMessage: {}", new Date().toLocaleString())
+        Connector.value.newMessage({ id: CurrentChannel.value, message: message });
     }
 
     useEffect(() => {
@@ -32,7 +35,9 @@ export default function Messages() {
             <Toolbar sx={{ marginBottom: 2 }} />
             <Grid flexGrow={3} display={'flex'} flexDirection={'column'} justifyContent={'flex-end'}>
                 {
-                    Messages && Messages.map((obj, index) => <MessageRow key={index} Data={obj} index={index} />)
+                    isLoading
+                        ? <CenterGrid><MoonLoader /></CenterGrid>
+                        : <ul>{Messages && Messages.map((obj, index) => obj && <MessageRow key={index} Data={obj} index={index} />)}</ul>
                 }
             </Grid>
             <span id="bottom" />
@@ -40,29 +45,35 @@ export default function Messages() {
         </Box >
     )
 }
+//                    : <ul>{Messages && Messages.map((obj, index) => obj && <li key={index}>#{index}. {JSON.stringify(obj)}</li>)}</ul>
 
+//<MessageRow key={index} Data={obj} index={index} />
 const MessageRow = ({ Data, index }: { Data: MessageObj, index: number }) => {
-    var date = Date.parse(Data.created)
-    const msgDate = new Date(date);
 
-    const shortDate = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'short' }).format(msgDate);
-    const shortTime = new Intl.DateTimeFormat('sv-SE', { timeStyle: 'short' }).format(msgDate);
-    const TimeString = shortDate + " " + shortTime;
-    const Even = index % 2 == 0;
-    return (
-        <Grid container display={"flex"} sx={{
-            bgcolor: Even ? grey[100] : "",
-            borderRadius: 1
-        }} p={1} alignItems={'center'} >
-            <Grid item xs={'auto'} pr={2} display={{ xs: "none", md: "block" }}>
-                <Chip label={TimeString} variant="outlined" />
-            </Grid>
-            <Grid
-                item
-                xs={true}
-                px={1}
-                py={1}
+    if (Data != undefined) {
+        var date = Date.parse(Data.created)
+        const msgDate = new Date(date);
 
-            >{Data.user}: {Data.message}</Grid>
-        </Grid >)
+        const shortDate = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'short' }).format(msgDate);
+        const shortTime = new Intl.DateTimeFormat('sv-SE', { timeStyle: 'short' }).format(msgDate);
+        const TimeString = shortDate + " " + shortTime;
+        const Even = index % 2 == 0;
+
+        return (
+            <Grid container display={"flex"} sx={{
+                bgcolor: Even ? grey[100] : "",
+                borderRadius: 1
+            }} p={1} alignItems={'center'} >
+                <Grid item xs={'auto'} pr={2} display={{ xs: "none", md: "block" }}>
+                    <Chip label={TimeString} variant="outlined" />
+                </Grid>
+                <Grid
+                    item
+                    xs={true}
+                    px={1}
+                    py={1}
+
+                >{Data.user.chatName}: {Data.message}</Grid>
+            </Grid >)
+    }
 }

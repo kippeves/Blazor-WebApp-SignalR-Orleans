@@ -2,12 +2,12 @@
 
 [GenerateSerializer]
 [Alias("ChatMsg")]
-public record class ChatMsg(string Name, string Message)
+public record class ChatMsg(MemberDetails User, string Message)
 {
     [Id(0)]
     public Guid Id { get; set; } = Guid.NewGuid();
     [Id(1)]
-    public string Name { get; init; } = Name;
+    public MemberDetails User { get; init; } = User;
 
     [Id(2)]
     public string Message { get; set; } = Message;

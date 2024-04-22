@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useAppSignal } from "./useChat";
 
 export const useStorageForCurrentChannel = () => {
-    const { Channel } = useAppSignal();
+    const { CurrentChannel: Channel } = useAppSignal();
 
     useEffect(() => {
         if (Channel.value === undefined) return;

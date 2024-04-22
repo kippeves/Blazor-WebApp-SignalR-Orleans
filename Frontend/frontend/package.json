@@ -13,7 +13,6 @@
     "@mui/icons-material": "^5.15.12",
     "@preact/signals": "^1.2.3",
     "@preact/signals-react": "^2.0.1",
-    "@tanstack/react-query": "^5.28.6",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/uuid": "^9.0.8",
     "axios": "^1.6.7",
@@ -30,7 +29,9 @@
     "react-hook-form": "^7.51.1",
     "react-loading-skeleton": "^3.4.0",
     "react-signalr": "^0.2.19",
+    "react-spinners": "^0.13.8",
     "react-tracked": "^1.7.14",
+    "swr": "^2.2.5",
     "yup": "^1.4.0",
     "zod": "^3.22.4"
   },

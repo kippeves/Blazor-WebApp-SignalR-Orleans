@@ -9,7 +9,7 @@ using Orleans.Runtime;
 using SignalR.Orleans.Core;
 
 namespace Grains;
-[Reentrant]
+
 public class ChannelGrain : Grain, IChannelGrain
 {
     private string GrainId => this.GetPrimaryKeyString();
@@ -45,27 +45,22 @@ public class ChannelGrain : Grain, IChannelGrain
     public async Task Join(IChatMemberGrain member)
     {
         Members.Add(member);
-        var keyId = member.GetPrimaryKey().ToString();
-        var name = await member.GetName();
-        _logger.LogInformation("[{keyId}]: {name} joined", keyId, name);
         await Task.CompletedTask;
     }
 
     public async Task Leave(IChatMemberGrain member)
     {
         Members.Remove(member);
-        var keyId = member.GetPrimaryKey().ToString();
-        var name = await member.GetName();
-        _logger.LogInformation("[{keyId}]: {name} left", keyId, name);
         await Task.CompletedTask;
     }
 
     public async Task Message(ChatMsg msg)
     {
+
         _state.State._messages.Add(msg);
         await _state.WriteStateAsync();
-        await _hub.Clients.All.SendAsync("ReceiveMessage", msg);
-        _logger.LogCritical("Messaging now");
+        var sentMessage = new MessageResponse(this.GetPrimaryKey(), msg);
+        await _hub.Clients.All.SendAsync("ReceiveMessage", sentMessage);
     }
 
     public async ValueTask<MemberDetails[]> GetMembers()
@@ -86,5 +81,6 @@ public class ChannelGrain : Grain, IChannelGrain
     }
 
 
-    public record JoinChannelEvent(Guid channelId, string channelName);
+    public record JoinChannelEvent(Guid ChannelId, string ChannelName);
+
 }

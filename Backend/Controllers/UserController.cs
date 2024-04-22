@@ -98,9 +98,9 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         else return new BadRequestObjectResult("User couldn't be registered");
     }
 
-    [HttpPost]
     [Authorize]
-    public async Task<IActionResult> ChangeName(NameChangeRequest req)
+    [HttpPost("ChangeName")]
+    public async Task<IActionResult> ChangeName([FromBody] NameChangeRequest req)
     {
         var user = _context.Users.Find(req.id);
         if (user is null) return BadRequest(new NameChangeResponse(false, "Could not find user"));
@@ -109,8 +109,9 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
         if (sameName) return BadRequest(new NameChangeResponse(false, "User with same name already exists. Please pick another name"));
 
         user.UserName = req.newName;
-        var success = await _context.SaveChangesAsync() > 0;
-        if (success)
+        _context.Update(user);
+        var changes = await _context.SaveChangesAsync();
+        if (changes > 0)
         {
             var userGrain = _cluster.GetGrain<IChatMemberGrain>(req.id);
             await userGrain.SetName(req.newName);

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
 using Microsoft.Extensions.Logging;
+using Orleans.Runtime;
 
 namespace Grains.Hubs;
 [Authorize]
@@ -19,7 +20,10 @@ public class ChatHub(IClusterClient clusterClient, ILogger<ChatHub> logger) : Hu
     public async Task Message(SendMessageRequest request)
     {
         if (request.id == default || !Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return;
-        await GetChannel(request.id).Message(new ChatMsg(userId.ToString(), request.message));
+        var user = GetUser(userId);
+        var info = await user.GetDetails();
+        using var scope = RequestContext.AllowCallChainReentrancy();
+        await GetChannel(request.id).Message(new ChatMsg(info, request.message));
     }
 
     [HubMethodName("SwitchChannel")]

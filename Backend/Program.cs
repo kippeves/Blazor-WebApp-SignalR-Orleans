@@ -1,3 +1,6 @@
+using Orleans.Configuration;
+using Orleans.Providers;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite("Data Source = AppDb.db"));
@@ -68,27 +71,50 @@ builder.Services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
 builder.Services.AddScoped<ApiKeyAuthFilter>();
 builder.Services.AddAuthorization();
 
-const string cosmosConnection = "AccountEndpoint=https://10.211.55.5:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-
+//const string cosmosConnection = "AccountEndpoint=https://10.211.55.5:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+const string mongoConnection = "mongodb+srv://Cluster36888:fEtJT11MfV5M@cluster36888.pjfoik9.mongodb.net/?appName=mongosh+2.2.3";
 builder.Host.UseOrleans(static siloBuilder =>
 {
+    var createShard = false;
+
     siloBuilder.UseLocalhostClustering();
     //    siloBuilder.AddMemoryGrainStorageAsDefault().AddMemoryGrainStorage("PubSub");
-    siloBuilder.AddCosmosGrainStorageAsDefault(
-    configureOptions: static options =>
+    siloBuilder.UseMongoDBClient("mongodb+srv://Cluster36888:fEtJT11MfV5M@cluster36888.pjfoik9.mongodb.net/?appName=mongosh+2.2.3");
+    siloBuilder.UseMongoDBClustering(options =>
     {
-        options.IsResourceCreationEnabled = true;
-        options.ContainerThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
-        options.ConfigureCosmosClient(cosmosConnection);
+        options.DatabaseName = "OrleansTestApp";
+        options.CreateShardKeyForCosmos = createShard;
+    }).AddMongoDBGrainStorageAsDefault(options =>
+    {
+        options.DatabaseName = "SignalRChat";
+        options.CreateShardKeyForCosmos = createShard;
+    }).AddMongoDBGrainStorage(ProviderConstants.DEFAULT_PUBSUB_PROVIDER_NAME,
+    options =>
+    {
+        options.DatabaseName = "SignalRPubSub";
+        options.CreateShardKeyForCosmos = createShard;
+    }
+    ).Configure<ClusterOptions>(options =>
+    {
+        options.ClusterId = "chatcluster";
+        options.ServiceId = "chatcluster";
     });
-    siloBuilder.AddCosmosGrainStorage(
-        name: "PubSub",
+
+    /*    siloBuilder.AddCosmosGrainStorageAsDefault(
         configureOptions: static options =>
         {
             options.IsResourceCreationEnabled = true;
             options.ContainerThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
             options.ConfigureCosmosClient(cosmosConnection);
         });
+        siloBuilder.AddCosmosGrainStorage(
+            name: "PubSub",
+            configureOptions: static options =>
+            {
+                options.IsResourceCreationEnabled = true;
+                options.ContainerThroughputProperties = ThroughputProperties.CreateAutoscaleThroughput(1000);
+                options.ConfigureCosmosClient(cosmosConnection);
+            });*/
     siloBuilder.UseSignalR(); // Adds ability #1 and #2 to Orleans.
     siloBuilder.RegisterHub<ChatHub>(); // Required for each hub type if the backplane ability #1 is being used.
 });

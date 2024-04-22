@@ -9,14 +9,13 @@ import ChannelList from "./channel-list";
 
 
 export default function ChannelSideBar() {
+    useSignals()
     const app = useContext(AppContext)
     const SidebarOpen = app.SidebarOpen;
     const flipMenu = () => {
         SidebarOpen.value = !SidebarOpen.value
     }
 
-    useSignals()
-    console.debug("channellist painting")
     return (
         <SlideDrawer open={SidebarOpen.value} variant="permanent">
             <Toolbar />

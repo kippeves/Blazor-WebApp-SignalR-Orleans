@@ -1,12 +1,15 @@
 'use client'
-import { auth } from "@/auth";
 import ChatClient from "@/components/ui/chat/chat-client";
 import { AppContextProvider } from "@/providers/AppContext";
-import { SessionProvider } from "next-auth/react";
-import React, { Suspense } from "react";
+import { useSession } from "next-auth/react";
+import React from "react";
 
 export default function Page() {
+    const session = useSession();
+    const token = session.data.user.token;
     return (
-        <ChatClient />
-    );
+        <AppContextProvider token={token}>
+            <ChatClient />
+        </AppContextProvider>
+    )
 }

@@ -1,4 +1,4 @@
 using Grains.Interfaces.Abstractions;
 
 [GenerateSerializer]
-public record MessageRequest(Guid channel, ChatMsg msg);
+public record MessageResponse(Guid channelId, ChatMsg msg);

@@ -35,12 +35,21 @@ export enum ClientState {
   NotConnected,
 }
 
+export type MessageResponse = {
+  channelId: UUID,
+  message: MessageObj
+}
 
 export type MessageObj = {
   id: UUID,
   created: string,
-  user: string,
-  //    User: SessionUser,
+  user: MemberObj,
+  message: string
+}
+
+
+export type MessageRequest = {
+  id: UUID,
   message: string
 }
 

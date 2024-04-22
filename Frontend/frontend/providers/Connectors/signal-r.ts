@@ -1,25 +1,31 @@
-import { MessageObj } from "@/lib/definitions";
+import { MessageRequest, MessageResponse } from "@/lib/definitions";
 import * as signalR from "@microsoft/signalr";
 import { UUID } from "node:crypto";
 import { useEffect } from "react";
 const URL = process.env.HUB_ADDRESS ?? "https://192.168.2.124:7084/hubs/chathub"; //or whatever your backend port is
-export class Connector {
-    private connection: signalR.HubConnection;
-    public state: signalR.HubConnectionState;
-    public events: (onMessageReceived: (msg: MessageObj) => void) => void;
+
+export type ConnectorType = {
+    events: (onMessageReceived: (response: MessageResponse) => void) => void,
+    newMessage: (message: MessageRequest) => void,
+    joinChannel: (id: UUID) => void,
+    connection: signalR.HubConnection
+}
+
+export class Connector implements ConnectorType {
+    public connection: signalR.HubConnection;
+    public events: (onMessageReceived: (response: MessageResponse) => void) => void;
     static instance: Connector;
+    static token: string;
 
-    constructor(token: string) {
+    constructor() {
         this.connection = new signalR.HubConnectionBuilder()
-            .withUrl(URL, { accessTokenFactory: () => token })
+            .withUrl(URL, { accessTokenFactory: () => Connector.token })
             .build();
-        this.connection.start().catch(err => document.write(err));
+        this.connection.start().catch(err => console.error(err));
         this.events = (onMessageReceived) =>
-            this.connection.on("ReceiveMessage", (message: MessageObj) => {
-                onMessageReceived(message);
+            this.connection.on("ReceiveMessage", (response: MessageResponse) => {
+                onMessageReceived(response);
             });
-
-        this.state = this.connection.state
     }
 
 
@@ -29,32 +35,13 @@ export class Connector {
     public joinChannel = (id: UUID) => {
         this.connection.send("JoinChannel", id)
     }
-    public static getInstance(token: string): Connector {
+    public static getInstance(token?: string): Connector {
+        if (token !== undefined && Connector.token !== '') Connector.token = token;
+
         if (!Connector.instance)
-            Connector.instance = new Connector(token);
+            Connector.instance = new Connector();
+
         return Connector.instance;
     }
 }
 export default Connector.getInstance;
-
-export type MessageRequest = {
-    id: UUID,
-    message: string
-}
-
-export type MessageResponse = {
-    channel: string,
-    message: ChatMsg
-}
-
-export type ChatUser = {
-    id: UUID,
-    name: string
-}
-
-export type ChatMsg = {
-    id: UUID,
-    user: ChatUser,
-    message: string,
-    created: string
-}
