@@ -26,18 +26,18 @@ public class ChannelController(IChannelRepository channelRepository, IClusterCli
             var members = await cluster.GetGrain<IChannelGrain>(channel).GetMembers();
             foreach (var member in members)
             {
-                yield return new ChatMemberDTO(member.id, member.chatName, member.pictureURL);
+                yield return new ChatMemberDTO(member.Id, member.ChatName, member.PictureURL);
             }
         }
     }
 
     [HttpGet]
     [Authorize]
-    public async IAsyncEnumerable<ChatMsg> GetMessages(Guid id, Guid? post)
+    public async IAsyncEnumerable<Message> GetMessages(Guid id, Guid? post)
     {
         var channel = cluster.GetGrain<IChannelGrain>(id);
         var messages = await channel.ReadHistory(post);
-        foreach (var message in messages.OrderBy(m => m.Created))
+        foreach (var message in messages.OrderBy(m => m.created))
         {
             yield return message;
         }

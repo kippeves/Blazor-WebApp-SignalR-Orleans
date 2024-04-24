@@ -40,14 +40,10 @@ builder.Services.AddAuthentication(options =>
         };
         o.Events = new JwtBearerEvents
         {
-            OnChallenge = async context =>
-            {
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(context.Request.Headers));
-                await Task.CompletedTask;
-            },
             OnAuthenticationFailed = async context =>
             {
-                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(context.Request.Headers));
+                Console.WriteLine("Exception: {0}", System.Text.Json.JsonSerializer.Serialize(context.Exception.Message));
+                Console.WriteLine("Fail: + {0}", System.Text.Json.JsonSerializer.Serialize(context.Request.Headers));
                 await Task.CompletedTask;
             },
             OnMessageReceived = context =>
@@ -71,8 +67,7 @@ builder.Services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
 builder.Services.AddScoped<ApiKeyAuthFilter>();
 builder.Services.AddAuthorization();
 
-//const string cosmosConnection = "AccountEndpoint=https://10.211.55.5:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-const string mongoConnection = "mongodb+srv://Cluster36888:fEtJT11MfV5M@cluster36888.pjfoik9.mongodb.net/?appName=mongosh+2.2.3";
+
 builder.Host.UseOrleans(static siloBuilder =>
 {
     var createShard = false;

@@ -102,19 +102,19 @@ public class UserController(ApplicationDbContext context, IClusterClient cluster
     [HttpPost("ChangeName")]
     public async Task<IActionResult> ChangeName([FromBody] NameChangeRequest req)
     {
-        var user = _context.Users.Find(req.id);
+        var user = _context.Users.Find(UserID);
         if (user is null) return BadRequest(new NameChangeResponse(false, "Could not find user"));
 
-        var sameName = _context.Users.Where(u => u.UserName.ToLower().Equals(req.newName.ToLower())).Any();
+        var sameName = _context.Users.Where(u => u.UserName.ToLower().Equals(req.NewName.ToLower())).Any();
         if (sameName) return BadRequest(new NameChangeResponse(false, "User with same name already exists. Please pick another name"));
 
-        user.UserName = req.newName;
+        user.UserName = req.NewName;
         _context.Update(user);
         var changes = await _context.SaveChangesAsync();
         if (changes > 0)
         {
-            var userGrain = _cluster.GetGrain<IChatMemberGrain>(req.id);
-            await userGrain.SetName(req.newName);
+            var userGrain = _cluster.GetGrain<IChatMemberGrain>(UserID);
+            await userGrain.SetName(req.NewName);
         }
 
         return Ok(new NameChangeResponse(true, "Name has been changed"));
@@ -129,7 +129,7 @@ public enum RegisterRole
 public record RegisterRequest(string name, string email, string password, RegisterRole? role) { }
 public record LoginRequest(string email, string password);
 public record UserDTO(Guid id, string name, string email);
-public record NameChangeRequest(Guid id, string newName);
+public record NameChangeRequest(string NewName);
 public record NameChangeResponse(bool success, string? message);
 public record RegisterControlRequest(string value);
 public record RegisterControlResponse(bool isSuccess, string? message);

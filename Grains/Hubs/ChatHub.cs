@@ -21,9 +21,9 @@ public class ChatHub(IClusterClient clusterClient, ILogger<ChatHub> logger) : Hu
     {
         if (request.id == default || !Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return;
         var user = GetUser(userId);
-        var info = await user.GetDetails();
+        var UserDetails = await user.GetDetails();
         using var scope = RequestContext.AllowCallChainReentrancy();
-        await GetChannel(request.id).Message(new ChatMsg(info, request.message));
+        await GetChannel(request.id).Message(UserDetails, request.message);
     }
 
     [HubMethodName("SwitchChannel")]

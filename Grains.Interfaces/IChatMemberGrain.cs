@@ -7,7 +7,7 @@ namespace Grains.Interfaces
         Task SetName(string chatName);
         Task<string> GetName();
 
-        Task<MemberDetails> GetDetails();
+        Task<MemberInfo> GetDetails();
         Task<AppSettings> GetSettings();
         Task SetActiveChannel(Guid? channelId);
         Task<Guid?> GetActiveChannel();

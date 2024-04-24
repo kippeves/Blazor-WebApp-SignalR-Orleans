@@ -6,11 +6,11 @@ namespace Grains;
 
 public sealed class ChatMemberGrain : Grain, IChatMemberGrain
 {
-    private readonly IPersistentState<MemberDetails> _state;
+    private readonly IPersistentState<MemberInfo> _state;
     private readonly IPersistentState<AppSettings> _settings;
     private IChannelGrain? ActiveChannel { get; set; }
     public ChatMemberGrain(
-        [PersistentState(stateName: "Member")] IPersistentState<MemberDetails> state,
+        [PersistentState(stateName: "Member")] IPersistentState<MemberInfo> state,
         [PersistentState(stateName: "AppSettings")] IPersistentState<AppSettings> settings)
     {
         _state = state;
@@ -50,13 +50,13 @@ public sealed class ChatMemberGrain : Grain, IChatMemberGrain
     public async Task SetName(string Name)
     {
 
-        _state.State = _state.State with { chatName = Name };
+        _state.State = _state.State with { ChatName = Name };
         await _state.WriteStateAsync();
     }
 
-    public Task<string> GetName() => Task.FromResult(_state.State.chatName);
+    public Task<string> GetName() => Task.FromResult(_state.State.ChatName);
 
-    public Task<MemberDetails> GetDetails() => Task.FromResult(_state.State with { id = this.GetPrimaryKey() });
+    public Task<MemberInfo> GetDetails() => Task.FromResult(_state.State with { Id = this.GetPrimaryKey() });
 
     public async Task SetActiveChannel(Guid? channelId)
     {

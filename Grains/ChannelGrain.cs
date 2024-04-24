@@ -1,33 +1,24 @@
 using Grains.Hubs;
 using Grains.Interfaces;
 using Grains.Interfaces.Abstractions;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Logging;
-using Orleans.Concurrency;
 using Orleans.Runtime;
-using SignalR.Orleans.Core;
 
 namespace Grains;
 
 public class ChannelGrain : Grain, IChannelGrain
 {
-    private string GrainId => this.GetPrimaryKeyString();
-    private readonly HubContext<ChatHub> _hubContext;
     private readonly IHubContext<ChatHub> _hub;
-    private readonly IPersistentState<ChannelDetails> _state;
-    private readonly ILogger<IChannelGrain> _logger;
+    private readonly IPersistentState<ChannelInfo> _state;
+
 
     public ChannelGrain(
-        [PersistentState(stateName: "Channel")] IPersistentState<ChannelDetails> state,
-        ILogger<IChannelGrain> logger,
+        [PersistentState(stateName: "Channel")] IPersistentState<ChannelInfo> state,
         IHubContext<ChatHub> hub
         )
     {
         _state = state;
-        _logger = logger;
         _hub = hub;
-        _hubContext = GrainFactory.GetHub<ChatHub>();
     }
 
     public HashSet<IChatMemberGrain> Members { get; set; } = [];
@@ -54,27 +45,27 @@ public class ChannelGrain : Grain, IChannelGrain
         await Task.CompletedTask;
     }
 
-    public async Task Message(ChatMsg msg)
+    public async Task Message(MemberInfo User, string Message)
     {
 
-        _state.State._messages.Add(msg);
+        var message = new Message(User, Message);
+        _state.State._messages.Add(message);
         await _state.WriteStateAsync();
-        var sentMessage = new MessageResponse(this.GetPrimaryKey(), msg);
-        await _hub.Clients.All.SendAsync("ReceiveMessage", sentMessage);
+        await _hub.Clients.All.SendAsync("ReceiveMessage", new MessageResponse(this.GetPrimaryKey(), message));
     }
 
-    public async ValueTask<MemberDetails[]> GetMembers()
+    public async ValueTask<MemberInfo[]> GetMembers()
     {
         return await Task.WhenAll(Members.Select(m => m.GetDetails()));
     }
 
-    public Task<ChatMsg[]> ReadHistory(Guid? fromId)
+    public Task<Message[]> ReadHistory(Guid? fromId)
     {
-        var result = _state.State._messages.OrderByDescending(m => m.Created).ToList();
+        var result = _state.State._messages.OrderByDescending(m => m.created).ToList();
         if (fromId != null)
         {
             var list = _state.State._messages;
-            var index = list.IndexOf(list.Single(m => m.Id.Equals(fromId)));
+            var index = list.IndexOf(list.Single(m => m.id.Equals(fromId)));
             result = result.Skip(index).ToList();
         }
         return Task.FromResult(result.Take(50).ToArray());
