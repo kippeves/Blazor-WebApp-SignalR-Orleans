@@ -74,7 +74,7 @@ builder.Host.UseOrleans(static siloBuilder =>
 
     siloBuilder.UseLocalhostClustering();
     //    siloBuilder.AddMemoryGrainStorageAsDefault().AddMemoryGrainStorage("PubSub");
-    siloBuilder.UseMongoDBClient("mongodb+srv://Cluster36888:fEtJT11MfV5M@cluster36888.pjfoik9.mongodb.net/?appName=mongosh+2.2.3");
+    siloBuilder.UseMongoDBClient("mongodb+srv://****/?appName=mongosh+2.2.3");
     siloBuilder.UseMongoDBClustering(options =>
     {
         options.DatabaseName = "OrleansTestApp";
